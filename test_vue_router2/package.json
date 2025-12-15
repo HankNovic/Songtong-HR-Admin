@@ -1,0 +1,25 @@
+{
+  "name": "test_vue_router2",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "vue": "^3.2.47",
+    "vue-router": "^4.2.1",
+    "axios": "^1.4.0",
+    "bootstrap": "^3.4.0",
+    "jquery": "^3.3.1",
+    "@rollup/plugin-inject": "^5.0.3"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^4.1.0",
+    "typescript": "^5.0.2",
+    "vite": "^4.3.9",
+    "vue-tsc": "^2.0.0"
+  }
+}
