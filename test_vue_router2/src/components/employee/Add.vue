@@ -98,7 +98,19 @@ searchDep();
 
 <style scoped>
 #container {
-  width: 600px;
-  margin: 10px auto;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 10px;
+  box-sizing: border-box;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+#buttons {
+  margin-top: auto;
+  padding-top: 10px;
+  align-self: flex-start;
 }
 </style>

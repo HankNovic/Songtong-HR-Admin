@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import axios from "../../util/axiosInstance"
-import { ref, reactive } from "vue";
+import { ref, reactive, computed } from "vue";
 import { useRouter } from "vue-router";
 
 interface Department {
@@ -20,6 +20,7 @@ interface Employee {
 
 const router = useRouter();
 const selectedId = ref(-1);
+const selectedIds = ref<number[]>([]);
 const datas = reactive({
   form: {
     number: null as number | null,
@@ -31,6 +32,25 @@ const datas = reactive({
   list: [] as Employee[],
   depList: [] as Department[]
 });
+
+const isAllSelected = computed(() => datas.list.length > 0 && selectedIds.value.length === datas.list.length);
+
+const toggleSelectAll = (checked: boolean) => {
+  selectedIds.value = checked ? datas.list.map(e => e.id) : [];
+  selectedId.value = checked && datas.list.length > 0 ? datas.list[0].id : -1;
+};
+
+const toggleSelect = (id: number, checked: boolean) => {
+  if (checked) {
+    if (!selectedIds.value.includes(id)) selectedIds.value.push(id);
+    selectedId.value = id;
+  } else {
+    selectedIds.value = selectedIds.value.filter(v => v !== id);
+    if (selectedId.value === id) selectedId.value = selectedIds.value[0] ?? -1;
+  }
+};
+
+const isSelected = (id: number) => selectedIds.value.includes(id);
 
 const search = () => {
   console.log('搜索函数被调用');
@@ -70,7 +90,15 @@ const searchDep = () => {
 
 const selectTr = (id: number) => {
   console.log(id);
-  selectedId.value = id;
+  if (selectedIds.value.includes(id)) {
+    selectedIds.value = selectedIds.value.filter(v => v !== id);
+    if (selectedId.value === id) {
+      selectedId.value = selectedIds.value[0] ?? -1;
+    }
+  } else {
+    selectedIds.value.push(id);
+    selectedId.value = id;
+  }
 };
 
 const showAdd = () => {
@@ -103,18 +131,21 @@ const showUpdate = () => {
 };
 
 const deleteData = () => {
-  if (selectedId.value > -1) {
-    axios.delete('/emp/' + selectedId.value)
-      .then((res) => {
-        if (res.data == true) {
-          search();
-        } else {
-          alert("系统错误");
-        }
-      });
-  } else {
+  if (selectedIds.value.length === 0) {
     alert("请选中数据");
+    return;
   }
+  if (!confirm("确定要删除选中的数据吗？")) return;
+  Promise.all(selectedIds.value.map(id => axios.delete('/emp/' + id)))
+    .then(() => {
+      search();
+      selectedIds.value = [];
+      selectedId.value = -1;
+    })
+    .catch((error) => {
+      console.error('批量删除失败:', error);
+      alert("删除失败，请稍后重试");
+    });
 };
 
 search();
@@ -154,26 +185,34 @@ searchDep();
       </form>
     </div>
 
-    <table class="table table-striped table-bordered table-hover">
-      <thead>
-        <tr>
-          <th>编号</th>
-          <th>名字</th>
-          <th>性别</th>
-          <th>年龄</th>
-          <th>部门</th>
-        </tr>
-      </thead>
-      <tbody class="scrollable-tbody">
-        <tr class="data" v-for="emp in datas.list" v-bind:key="emp.id" v-bind:class="{ selected: emp.id == selectedId }" @click="selectTr(emp.id)">
-          <td v-text="emp.number"></td>
-          <td v-text="emp.name"></td>
-          <td v-text="emp.gender"></td>
-          <td v-text="emp.age"></td>
-          <td v-text="emp.dep != null ? emp.dep.name : ''"></td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="table-wrapper">
+      <table class="table table-striped table-bordered table-hover">
+        <thead>
+          <tr>
+            <th class="col-check">
+              <input type="checkbox" :checked="isAllSelected" @change="toggleSelectAll(($event.target as HTMLInputElement).checked)" />
+            </th>
+            <th>编号</th>
+            <th>名字</th>
+            <th>性别</th>
+            <th>年龄</th>
+            <th>部门</th>
+          </tr>
+        </thead>
+        <tbody class="scrollable-tbody">
+          <tr class="data" v-for="emp in datas.list" v-bind:key="emp.id" v-bind:class="{ selected: isSelected(emp.id) }" @click="selectTr(emp.id)">
+            <td class="col-check">
+              <input type="checkbox" :checked="isSelected(emp.id)" @click.stop @change="toggleSelect(emp.id, ($event.target as HTMLInputElement).checked)" />
+            </td>
+            <td v-text="emp.number"></td>
+            <td v-text="emp.name"></td>
+            <td v-text="emp.gender"></td>
+            <td v-text="emp.age"></td>
+            <td v-text="emp.dep != null ? emp.dep.name : ''"></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
     <div id="buttons">
       <button type="button" class="btn btn-primary" @click="showAdd">新增</button>
@@ -185,39 +224,65 @@ searchDep();
 
 <style scoped>
 #container {
-  width: 800px;
-  margin: 10px auto;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 10px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
 }
 
 #container .selected {
-  background: #337ab7;
+  background: var(--color-primary);
+  color: var(--color-text-light);
 }
 
 #buttons button {
   margin-right: 5px;
 }
 
-.table {
-  width: 100%;
-  display: block;
-  overflow-x: auto;
+#buttons {
+  margin-top: auto;
+  padding-top: 10px;
+  align-self: flex-start;
 }
 
-.table thead,
-.table tbody tr {
-  display: table;
+.table-wrapper {
+  flex: 1;
+  overflow: auto;
+  margin-top: 10px;
+}
+
+.table {
   width: 100%;
+  border-collapse: collapse;
   table-layout: fixed;
 }
 
-.table thead {
-  width: calc(100% - 17px); /* Adjust for scrollbar width */
+.table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--color-table-header-bg);
+  color: var(--color-table-header-text);
+  z-index: 2;
 }
 
 .scrollable-tbody {
-  display: block;
-  max-height: 300px; /* 根据需要调整高度 */
-  overflow-y: auto;
+  display: table-row-group;
+  max-height: none;
+  overflow: visible;
   width: 100%;
+}
+
+.col-check {
+  width: 50px;
+  min-width: 50px;
+  max-width: 50px;
+  text-align: center;
+}
+
+.col-check input {
+  margin: 0;
 }
 </style>

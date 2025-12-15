@@ -45,6 +45,24 @@ const routes = [
                 name: "DepUpdate",
                 component: () =>
                     import( "../components/department/Update.vue")
+            },
+            {
+                path: "/sysUser/show",
+                name: "SysUserShow",
+                component: () =>
+                    import( "../components/sysUser/Show.vue")
+            },
+            {
+                path: "/sysRole/show",
+                name: "SysRoleShow",
+                component: () =>
+                    import( "../components/sysRole/Show.vue")
+            },
+            {
+                path: "/sysPermission/show",
+                name: "SysPermissionShow",
+                component: () =>
+                    import( "../components/sysPermission/Show.vue")
             }
         ]
     }
