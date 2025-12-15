@@ -27,6 +27,24 @@ const routes = [
                 name: "EmpUpdate",
                 component: () =>
                     import( "../components/employee/Update.vue")
+            },
+            {
+                path: "/dep/show",
+                name: "DepShow",
+                component: () =>
+                    import( "../components/department/Show.vue")
+            },
+            {
+                path: "/dep/add",
+                name: "DepAdd",
+                component: () =>
+                    import( "../components/department/Add.vue")
+            },
+            {
+                path: "/dep/update",
+                name: "DepUpdate",
+                component: () =>
+                    import( "../components/department/Update.vue")
             }
         ]
     }
