@@ -2,6 +2,7 @@
 import axios from "../../util/axiosInstance"
 import { ref, reactive, computed } from "vue";
 import { useRouter } from "vue-router";
+import { useClickOutsideClearSelection } from "../../util/useClickOutsideClearSelection";
 
 interface Department {
   id: number;
@@ -21,6 +22,7 @@ interface Employee {
 const router = useRouter();
 const selectedId = ref(-1);
 const selectedIds = ref<number[]>([]);
+const batchMode = ref(false);
 const datas = reactive({
   form: {
     number: null as number | null,
@@ -33,14 +35,24 @@ const datas = reactive({
   depList: [] as Department[]
 });
 
+const toggleBatch = () => {
+  batchMode.value = !batchMode.value;
+  if (!batchMode.value) {
+    selectedIds.value = [];
+    selectedId.value = -1;
+  }
+};
+
 const isAllSelected = computed(() => datas.list.length > 0 && selectedIds.value.length === datas.list.length);
 
 const toggleSelectAll = (checked: boolean) => {
+  if (!batchMode.value) return;
   selectedIds.value = checked ? datas.list.map(e => e.id) : [];
   selectedId.value = checked && datas.list.length > 0 ? datas.list[0].id : -1;
 };
 
 const toggleSelect = (id: number, checked: boolean) => {
+  if (!batchMode.value) return;
   if (checked) {
     if (!selectedIds.value.includes(id)) selectedIds.value.push(id);
     selectedId.value = id;
@@ -50,7 +62,8 @@ const toggleSelect = (id: number, checked: boolean) => {
   }
 };
 
-const isSelected = (id: number) => selectedIds.value.includes(id);
+const isSelected = (id: number) =>
+  batchMode.value ? selectedIds.value.includes(id) : selectedId.value === id;
 
 const search = () => {
   console.log('搜索函数被调用');
@@ -90,6 +103,7 @@ const searchDep = () => {
 
 const selectTr = (id: number) => {
   console.log(id);
+  if (batchMode.value) {
   if (selectedIds.value.includes(id)) {
     selectedIds.value = selectedIds.value.filter(v => v !== id);
     if (selectedId.value === id) {
@@ -97,6 +111,9 @@ const selectTr = (id: number) => {
     }
   } else {
     selectedIds.value.push(id);
+      selectedId.value = id;
+    }
+  } else {
     selectedId.value = id;
   }
 };
@@ -131,9 +148,17 @@ const showUpdate = () => {
 };
 
 const deleteData = () => {
+  if (batchMode.value) {
   if (selectedIds.value.length === 0) {
-    alert("请选中数据");
+      alert("请选中要删除的数据");
+      return;
+    }
+  } else {
+    if (selectedId.value < 0) {
+      alert("请先选中要删除的数据行");
     return;
+    }
+    selectedIds.value = [selectedId.value];
   }
   if (!confirm("确定要删除选中的数据吗？")) return;
   Promise.all(selectedIds.value.map(id => axios.delete('/emp/' + id)))
@@ -147,6 +172,9 @@ const deleteData = () => {
       alert("删除失败，请稍后重试");
     });
 };
+
+// 使用可复用的点击外部取消选中功能
+useClickOutsideClearSelection(selectedId, selectedIds, batchMode);
 
 search();
 searchDep();
@@ -189,7 +217,7 @@ searchDep();
       <table class="table table-striped table-bordered table-hover">
         <thead>
           <tr>
-            <th class="col-check">
+            <th class="col-check" v-if="batchMode">
               <input type="checkbox" :checked="isAllSelected" @change="toggleSelectAll(($event.target as HTMLInputElement).checked)" />
             </th>
             <th>编号</th>
@@ -201,7 +229,7 @@ searchDep();
         </thead>
         <tbody class="scrollable-tbody">
           <tr class="data" v-for="emp in datas.list" v-bind:key="emp.id" v-bind:class="{ selected: isSelected(emp.id) }" @click="selectTr(emp.id)">
-            <td class="col-check">
+            <td class="col-check" v-if="batchMode">
               <input type="checkbox" :checked="isSelected(emp.id)" @click.stop @change="toggleSelect(emp.id, ($event.target as HTMLInputElement).checked)" />
             </td>
             <td v-text="emp.number"></td>
@@ -215,8 +243,11 @@ searchDep();
     </div>
 
     <div id="buttons">
-      <button type="button" class="btn btn-primary" @click="showAdd">新增</button>
-      <button type="button" class="btn btn-primary" @click="showUpdate">修改</button>
+      <button type="button" class="btn btn-default" @click="toggleBatch">
+        {{ batchMode ? '退出批量' : '批量操作' }}
+      </button>
+      <button type="button" class="btn btn-primary" v-if="!batchMode" @click="showAdd">新增</button>
+      <button type="button" class="btn btn-primary" v-if="!batchMode" @click="showUpdate">修改</button>
       <button type="button" class="btn btn-danger" @click="deleteData">删除</button>
     </div>
   </div>

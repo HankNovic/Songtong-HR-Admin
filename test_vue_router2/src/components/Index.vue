@@ -1,8 +1,11 @@
 <script lang="ts" setup>
-import { onMounted, ref } from "vue";
-import { useRouter } from "vue-router";
+import { onMounted, ref, computed } from "vue";
+import { useRouter, useRoute } from "vue-router";
+import { useAuth } from "../stores/auth";
 
 const router = useRouter();
+const route = useRoute();
+const auth = useAuth();
 
 // 控制各个菜单的展开/收起状态
 const empExpanded = ref(true);
@@ -56,18 +59,60 @@ const hidePreview = () => {
   scheduleHidePreview();
 };
 
+// 检查权限
+const hasPermission = (code: string) => {
+  return auth.hasPermission(code);
+};
+
+const pageTitle = computed(() => {
+  const metaTitle = (route.meta as any).title as string | undefined;
+  return metaTitle ? `Alan人事管理系统 - ${metaTitle}` : "Alan人事管理系统";
+});
+
+// 登出
+const handleLogout = () => {
+  if (confirm('确定要退出登录吗？')) {
+    auth.logout();
+    router.push('/login');
+  }
+};
+
 onMounted(() => {
+  // 恢复登录状态
+  auth.restoreAuth();
+  
+  // 如果未登录，跳转到登录页
+  if (!auth.isAuthenticated.value) {
+    router.push('/login');
+    return;
+  }
+  
+  // 根据权限跳转到第一个有权限的页面
+  if (hasPermission('employee')) {
   router.push("/emp/show");
+  } else if (hasPermission('department')) {
+    router.push("/dep/show");
+  } else if (hasPermission('sysUser')) {
+    router.push("/sysUser/show");
+  } else if (hasPermission('sysRole')) {
+    router.push("/sysRole/show");
+  } else if (hasPermission('sysPermission')) {
+    router.push("/sysPermission/show");
+  }
 });
 </script>
 <template>
 <div id="container">
 <div id="top">
-<div id="logo">Alan人事管理系统</div>
+<div id="logo">{{ pageTitle }}</div>
+<div id="user-info">
+  <span class="username">{{ auth.user.value?.username || '未登录' }}</span>
+  <button class="logout-btn" @click="handleLogout">退出</button>
+</div>
 </div>
 <div id="main">
 <div id="left" :class="{ collapsed }">
-  <div class="menu-section" @mouseenter="showPreview('emp', $event)" @mouseleave="hidePreview">
+  <div v-if="hasPermission('employee')" class="menu-section" @mouseenter="showPreview('emp', $event)" @mouseleave="hidePreview">
     <div class="yi" @click="toggleMenu('emp')">
       <div class="menu-item-content">
         <svg class="menu-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -90,7 +135,7 @@ onMounted(() => {
     </transition>
   </div>
 
-  <div class="menu-section" @mouseenter="showPreview('dep', $event)" @mouseleave="hidePreview">
+  <div v-if="hasPermission('department')" class="menu-section" @mouseenter="showPreview('dep', $event)" @mouseleave="hidePreview">
     <div class="yi" @click="toggleMenu('dep')">
       <div class="menu-item-content">
         <svg class="menu-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -109,7 +154,7 @@ onMounted(() => {
     </transition>
   </div>
 
-  <div class="menu-section" @mouseenter="showPreview('perm', $event)" @mouseleave="hidePreview">
+  <div v-if="hasPermission('sysUser') || hasPermission('sysRole') || hasPermission('sysPermission')" class="menu-section" @mouseenter="showPreview('perm', $event)" @mouseleave="hidePreview">
     <div class="yi" @click="toggleMenu('perm')">
       <div class="menu-item-content">
         <svg class="menu-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -122,26 +167,26 @@ onMounted(() => {
     </div>
     <transition name="slide">
       <ul class="er" v-show="!collapsed && permExpanded">
-        <li><router-link to="/sysUser/show">用户管理</router-link></li>
-        <li><router-link to="/sysRole/show">角色管理</router-link></li>
-        <li><router-link to="/sysPermission/show">权限管理</router-link></li>
+        <li v-if="hasPermission('sysUser')"><router-link to="/sysUser/show">用户管理</router-link></li>
+        <li v-if="hasPermission('sysRole')"><router-link to="/sysRole/show">角色管理</router-link></li>
+        <li v-if="hasPermission('sysPermission')"><router-link to="/sysPermission/show">权限管理</router-link></li>
       </ul>
     </transition>
   </div>
 
   <div v-if="collapsed && preview" class="preview" :style="{ top: previewTop + 'px' }" @mouseenter="clearHidePreview" @mouseleave="hidePreview">
-    <template v-if="preview === 'emp'">
+    <template v-if="preview === 'emp' && hasPermission('employee')">
       <router-link class="preview-item" to="/emp/show">员工管理</router-link>
       <router-link class="preview-item" to="/emp/add">员工添加</router-link>
     </template>
-    <template v-else-if="preview === 'dep'">
+    <template v-else-if="preview === 'dep' && hasPermission('department')">
       <router-link class="preview-item" to="/dep/show">部门管理</router-link>
       <router-link class="preview-item" to="/dep/add">部门添加</router-link>
     </template>
     <template v-else-if="preview === 'perm'">
-      <router-link class="preview-item" to="/sysUser/show">用户管理</router-link>
-      <router-link class="preview-item" to="/sysRole/show">角色管理</router-link>
-      <router-link class="preview-item" to="/sysPermission/show">权限管理</router-link>
+      <router-link v-if="hasPermission('sysUser')" class="preview-item" to="/sysUser/show">用户管理</router-link>
+      <router-link v-if="hasPermission('sysRole')" class="preview-item" to="/sysRole/show">角色管理</router-link>
+      <router-link v-if="hasPermission('sysPermission')" class="preview-item" to="/sysPermission/show">权限管理</router-link>
     </template>
   </div>
 </div>
@@ -181,6 +226,7 @@ onMounted(() => {
   flex-shrink: 0;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   padding: 0 20px;
 }
 
@@ -188,6 +234,32 @@ onMounted(() => {
   color: #fff;
   font-size: 24px;
   font-weight: bold;
+}
+
+#user-info {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.username {
+  color: #fff;
+  font-size: 14px;
+}
+
+.logout-btn {
+  padding: 6px 16px;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.logout-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 
 #bottom {

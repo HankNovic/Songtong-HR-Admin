@@ -1,37 +1,58 @@
 <script lang="ts" setup>
-import { ref, reactive, computed } from "vue";
-import { useRouter } from "vue-router";
+import { ref, reactive, computed, onMounted } from "vue";
+import { getAllUsers, createUser, updateUser, deleteUser } from "../../api/user";
+import { getAllRoles } from "../../api/role";
+import { getUserRoles, updateUserRoles } from "../../api/userRole";
+import type { User } from "../../types/user";
+import { useClickOutsideClearSelection } from "../../util/useClickOutsideClearSelection";
 
-// 注意：后端接口尚未实现，当前使用占位数据
-interface SysUser {
-  id: number;
-  username: string;
-  password?: string;
-  name: string;
-  email?: string;
-  status: string;
-  createTime?: string;
-}
-
-const router = useRouter();
 const selectedId = ref(-1);
 const selectedIds = ref<number[]>([]);
+const batchMode = ref(false);
+const loading = ref(false);
+const errorMessage = ref("");
 const datas = reactive({
   form: {
     username: null as string | null,
     name: null as string | null
   },
-  list: [] as SysUser[]
+  list: [] as User[]
 });
+
+const allRoles = ref<{ id: number; name: string; code: string }[]>([]);
+const assignedRoleIds = ref<number[]>([]);
+const showRoleDialog = ref(false);
+const currentUser = ref<User | null>(null);
+
+const showEditDialog = ref(false);
+const editMode = ref<"create" | "edit">("create");
+const editForm = reactive({
+  id: null as number | null,
+  username: "",
+  password: "",
+  name: "",
+  email: "",
+  status: "启用",
+});
+
+const toggleBatch = () => {
+  batchMode.value = !batchMode.value;
+  if (!batchMode.value) {
+    selectedIds.value = [];
+    selectedId.value = -1;
+  }
+};
 
 const isAllSelected = computed(() => datas.list.length > 0 && selectedIds.value.length === datas.list.length);
 
 const toggleSelectAll = (checked: boolean) => {
-  selectedIds.value = checked ? datas.list.map(u => u.id) : [];
-  selectedId.value = checked && datas.list.length > 0 ? datas.list[0].id : -1;
+  if (!batchMode.value) return;
+  selectedIds.value = checked ? datas.list.map(u => u.id as number) : [];
+  selectedId.value = checked && datas.list.length > 0 ? (datas.list[0].id as number) : -1;
 };
 
 const toggleSelect = (id: number, checked: boolean) => {
+  if (!batchMode.value) return;
   if (checked) {
     if (!selectedIds.value.includes(id)) selectedIds.value.push(id);
     selectedId.value = id;
@@ -41,75 +62,206 @@ const toggleSelect = (id: number, checked: boolean) => {
   }
 };
 
-const isSelected = (id: number) => selectedIds.value.includes(id);
+const isSelected = (id: number) =>
+  batchMode.value ? selectedIds.value.includes(id) : selectedId.value === id;
 
-const search = () => {
-  console.log('搜索用户函数被调用');
-  // TODO: 等待后端接口实现
-  // axios.get('/sysUser', { params: datas.form })
-  //   .then((res) => {
-  //     datas.list = res.data;
-  //   })
-  //   .catch((error) => {
-  //     console.error('用户列表请求失败:', error);
-  //   });
-  
-  // 临时占位数据
-  datas.list = [
-    { id: 1, username: 'admin', name: '管理员', status: '启用', email: 'admin@example.com' },
-    { id: 2, username: 'user1', name: '普通用户', status: '启用', email: 'user1@example.com' }
-  ];
+const search = async () => {
+  loading.value = true;
+  errorMessage.value = "";
+  try {
+    const res = await getAllUsers();
+    if (res.code === 200) {
+      datas.list = res.data || [];
+      // 简单过滤
+      if (datas.form.username) {
+        datas.list = datas.list.filter(u => u.username?.includes(datas.form.username as string));
+      }
+      if (datas.form.name) {
+        datas.list = datas.list.filter(u => (u as any).name?.includes(datas.form.name as string));
+      }
+    } else {
+      errorMessage.value = res.message || "获取用户列表失败";
+    }
+  } catch (err: any) {
+    console.error("用户列表请求失败:", err);
+    errorMessage.value = err?.message || "用户列表请求失败";
+  } finally {
+    loading.value = false;
+  }
 };
 
 const selectTr = (id: number) => {
-  console.log('选中用户ID:', id);
+  if (batchMode.value) {
   if (selectedIds.value.includes(id)) {
     selectedIds.value = selectedIds.value.filter(v => v !== id);
-    if (selectedId.value === id) {
-      selectedId.value = selectedIds.value[0] ?? -1;
+      if (selectedId.value === id) selectedId.value = selectedIds.value[0] ?? -1;
+    } else {
+      selectedIds.value.push(id);
+      selectedId.value = id;
     }
   } else {
-    selectedIds.value.push(id);
     selectedId.value = id;
   }
 };
 
-const showAdd = () => {
-  console.log('点击了新增按钮');
-  // TODO: 实现用户添加功能
-  alert("用户添加功能开发中，等待后端接口实现");
+const resetEditForm = () => {
+  editForm.id = null;
+  editForm.username = "";
+  editForm.password = "";
+  editForm.name = "";
+  editForm.email = "";
+  editForm.status = "启用";
 };
 
-const showUpdate = () => {
-  console.log('点击了修改按钮');
-  if (selectedId.value > -1) {
-    // TODO: 实现用户修改功能
-    alert("用户修改功能开发中，等待后端接口实现");
-  } else {
-    alert("请选中数据");
+const showAdd = async () => {
+  resetEditForm();
+  editMode.value = "create";
+  showEditDialog.value = true;
+};
+
+const showUpdate = async () => {
+  if (batchMode.value && selectedIds.value.length !== 1) {
+    alert("批量模式下只能选择一条进行编辑");
+    return;
   }
-};
-
-const deleteData = () => {
-  if (selectedIds.value.length === 0) {
+  if (selectedId.value < 0) {
     alert("请选中数据");
     return;
   }
-  if (!confirm("确定要删除选中的用户吗？（当前为占位操作，未调用后端）")) return;
-  datas.list = datas.list.filter(u => !selectedIds.value.includes(u.id));
-  selectedIds.value = [];
-  selectedId.value = -1;
+  const current = datas.list.find(u => u.id === selectedId.value);
+  if (!current) return;
+  editMode.value = "edit";
+  editForm.id = current.id ?? null;
+  editForm.username = current.username ?? "";
+  editForm.name = (current as any).name || "";
+  editForm.email = (current as any).email || "";
+  editForm.status = (current as any).status || "启用";
+  editForm.password = "";
+  showEditDialog.value = true;
 };
 
+const submitUserEdit = async () => {
+  if (!editForm.username) {
+    alert("用户名不能为空");
+    return;
+  }
+  if (editMode.value === "create" && !editForm.password) {
+    alert("密码不能为空");
+    return;
+  }
+
+  const payload: any = {
+    id: editForm.id ?? undefined,
+    username: editForm.username,
+    name: editForm.name || undefined,
+    email: editForm.email || undefined,
+    status: editForm.status || "启用",
+  };
+
+  if (editForm.password) {
+    payload.password = editForm.password;
+  }
+
+  try {
+    const res = editMode.value === "create"
+      ? await createUser(payload)
+      : await updateUser(payload);
+    if (res.code === 200 && res.data === true) {
+      alert(editMode.value === "create" ? "新增成功" : "修改成功");
+      showEditDialog.value = false;
+      search();
+    } else {
+      alert(res.message || "提交失败");
+    }
+  } catch (e: any) {
+    alert(e?.message || "提交失败");
+  }
+};
+
+const deleteData = async () => {
+  if (batchMode.value) {
+    if (selectedIds.value.length === 0) {
+      alert("请选中要删除的数据");
+      return;
+    }
+  } else {
+    if (selectedId.value < 0) {
+      alert("请先选中要删除的数据行");
+      return;
+    }
+    selectedIds.value = [selectedId.value];
+  }
+  if (!confirm("确定要删除选中的用户吗？")) return;
+  try {
+    await Promise.all(selectedIds.value.map(id => deleteUser(id)));
+    alert("删除成功");
+  selectedIds.value = [];
+  selectedId.value = -1;
+    search();
+  } catch (e: any) {
+    alert(e?.message || "删除失败");
+  }
+};
+
+const statusDotClass = (status?: string) => {
+  const normalized = status || "";
+  return normalized === "启用" ? "status-dot status-dot--active" : "status-dot status-dot--inactive";
+};
+
+// 分配角色
+const openAssignRoles = async () => {
+  if (selectedId.value < 0) {
+    alert("请选中用户");
+    return;
+  }
+  currentUser.value = datas.list.find(u => u.id === selectedId.value) || null;
+  if (!currentUser.value) return;
+
+  try {
+    const [rolesRes, userRoleRes] = await Promise.all([
+      getAllRoles(),
+      getUserRoles(currentUser.value.id)
+    ]);
+    if (rolesRes.code === 200) {
+      allRoles.value = rolesRes.data || [];
+    }
+    if (userRoleRes.code === 200) {
+      assignedRoleIds.value = userRoleRes.data || [];
+    }
+    showRoleDialog.value = true;
+  } catch (e: any) {
+    alert(e?.message || "加载角色失败");
+  }
+};
+
+const saveUserRoles = async () => {
+  if (!currentUser.value) return;
+  try {
+    const res = await updateUserRoles(currentUser.value.id, assignedRoleIds.value);
+    if (res.code === 200 && res.data === true) {
+      alert("分配角色成功");
+      showRoleDialog.value = false;
+      search();
+    } else {
+      alert(res.message || "分配角色失败");
+    }
+  } catch (e: any) {
+    alert(e?.message || "分配角色失败");
+  }
+};
+
+// 使用可复用的点击外部取消选中功能
+useClickOutsideClearSelection(selectedId, selectedIds, batchMode);
+
+onMounted(() => {
 // 页面加载时自动查询
 search();
+});
 </script>
 
 <template>
   <div id="container">
-    <div class="notice-box">
-      <p><strong>提示：</strong>用户管理功能正在开发中，等待后端接口实现。</p>
-    </div>
+    
     
     <div class="form-horizontal">
       <form class="form-group" @submit.prevent="search">
@@ -128,37 +280,103 @@ search();
       </form>
     </div>
 
+    <div class="table-wrapper">
     <table class="table table-striped table-bordered table-hover">
       <thead>
         <tr>
-          <th class="col-check">
+          <th class="col-check" v-if="batchMode">
             <input type="checkbox" :checked="isAllSelected" @change="toggleSelectAll(($event.target as HTMLInputElement).checked)" />
           </th>
           <th>ID</th>
-          <th>用户名</th>
+          <th class="username-col">用户名</th>
           <th>姓名</th>
           <th>邮箱</th>
-          <th>状态</th>
+          <th>已分配角色</th>
+          <th class="status-col">状态</th>
         </tr>
       </thead>
       <tbody class="scrollable-tbody">
         <tr class="data" v-for="user in datas.list" v-bind:key="user.id" v-bind:class="{ selected: isSelected(user.id) }" @click="selectTr(user.id)">
-          <td class="col-check">
+          <td class="col-check" v-if="batchMode">
             <input type="checkbox" :checked="isSelected(user.id)" @click.stop @change="toggleSelect(user.id, ($event.target as HTMLInputElement).checked)" />
           </td>
           <td v-text="user.id"></td>
-          <td v-text="user.username"></td>
+          <td class="username-col" v-text="user.username"></td>
           <td v-text="user.name"></td>
           <td v-text="user.email || '-'"></td>
-          <td v-text="user.status"></td>
+          <td>{{ (user.roles || []).map(r => r.name).join("，") || '-' }}</td>
+          <td class="status-col">
+            <span :class="statusDotClass(user.status)"></span>
+            <span>{{ user.status }}</span>
+          </td>
         </tr>
       </tbody>
     </table>
+    </div>
 
     <div id="buttons">
-      <button type="button" class="btn btn-primary" @click="showAdd">新增</button>
-      <button type="button" class="btn btn-primary" @click="showUpdate">修改</button>
+      <button type="button" class="btn btn-default" @click="toggleBatch">
+        {{ batchMode ? '退出批量' : '批量操作' }}
+      </button>
+      <button type="button" class="btn btn-primary" v-if="!batchMode" @click="showAdd">新增</button>
+      <button type="button" class="btn btn-primary" v-if="!batchMode" @click="showUpdate">修改</button>
       <button type="button" class="btn btn-danger" @click="deleteData">删除</button>
+      <button type="button" class="btn btn-primary" v-if="!batchMode" @click="openAssignRoles">分配角色</button>
+    </div>
+
+    <!-- 分配角色弹窗 -->
+    <div v-if="showRoleDialog" class="modal-mask">
+      <div class="modal-container">
+        <h4>为 {{ currentUser?.username }} 分配角色</h4>
+        <div class="role-list">
+          <label v-for="role in allRoles" :key="role.id" class="role-item">
+            <input type="checkbox" :value="role.id" v-model="assignedRoleIds" />
+            {{ role.name }} ({{ role.code }})
+          </label>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-primary" @click="saveUserRoles">保存</button>
+          <button class="btn btn-default" @click="showRoleDialog = false">取消</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 新增/修改用户弹窗（复用通用 editDialog） -->
+    <div v-if="showEditDialog" class="modal-mask">
+      <div class="modal-container">
+        <h4>{{ editMode === 'create' ? '新增用户' : '修改用户' }}</h4>
+        <div class="form-row">
+          <label>用户名</label>
+          <input v-model="editForm.username" type="text" class="form-control" placeholder="请输入用户名" />
+        </div>
+        <div class="form-row" v-if="editMode === 'create'">
+          <label>密码</label>
+          <input v-model="editForm.password" type="password" class="form-control" placeholder="请输入密码（将进行加密存储）" />
+        </div>
+        <div class="form-row" v-else>
+          <label>密码（如需修改请填写新密码）</label>
+          <input v-model="editForm.password" type="password" class="form-control" placeholder="不填则保持原密码" />
+        </div>
+        <div class="form-row">
+          <label>姓名</label>
+          <input v-model="editForm.name" type="text" class="form-control" placeholder="请输入姓名" />
+        </div>
+        <div class="form-row">
+          <label>邮箱</label>
+          <input v-model="editForm.email" type="email" class="form-control" placeholder="请输入邮箱" />
+        </div>
+        <div class="form-row">
+          <label>状态</label>
+          <select v-model="editForm.status" class="form-control">
+            <option value="启用">启用</option>
+            <option value="禁用">禁用</option>
+          </select>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-primary" @click="submitUserEdit">保存</button>
+          <button class="btn btn-default" @click="showEditDialog = false">取消</button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -169,7 +387,8 @@ search();
   margin: 0;
   padding: 10px;
   box-sizing: border-box;
-  min-height: 100%;
+  height: 100%;
+  min-height: 0;
   display: flex;
   flex-direction: column;
 }
@@ -200,6 +419,121 @@ search();
   margin-top: auto;
   padding-top: 10px;
   align-self: flex-start;
+}
+
+.modal-mask {
+  position: fixed;
+  z-index: 999;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-container {
+  background: #fff;
+  padding: 20px;
+  border-radius: 6px;
+  width: 400px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.modal-container h4 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.form-row {
+  margin-bottom: 12px;
+}
+
+.form-row label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+.form-row .form-control {
+  width: 100%;
+  padding: 6px 10px;
+  box-sizing: border-box;
+}
+
+.role-list {
+  max-height: 240px;
+  overflow: auto;
+  border: 1px solid #eee;
+  padding: 10px;
+  margin: 10px 0;
+}
+
+.role-item {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.modal-actions {
+  text-align: right;
+  margin-top: 20px;
+}
+
+.modal-actions .btn {
+  margin-left: 10px;
+}
+
+.status-col {
+  width: 120px;
+  min-width: 120px;
+  text-align: left;
+  vertical-align: middle;
+  padding: 8px;
+}
+
+td.status-col {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #9ca3af;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.status-dot--active {
+  background: #22c55e;
+}
+
+.status-dot--inactive {
+  background: #9ca3af;
+}
+
+.username-col {
+  width: 200px;
+  min-width: 200px;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+.table-wrapper {
+  flex: 1;
+  overflow: auto;
+  width: 100%;
 }
 
 .table {

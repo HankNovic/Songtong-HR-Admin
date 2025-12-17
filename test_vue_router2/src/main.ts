@@ -14,4 +14,12 @@ Object.entries(COLOR_VARS).forEach(([key, value]) => {
   root.style.setProperty(key, value);
 });
 
+// 在应用启动时恢复登录状态（从 localStorage）
+const savedUser = localStorage.getItem('user');
+const savedPermissions = localStorage.getItem('permissions');
+const savedRoles = localStorage.getItem('roles');
+if (savedUser || savedPermissions || savedRoles) {
+  // 登录状态会在路由守卫中恢复
+}
+
 createApp(App).use(router).mount('#app')

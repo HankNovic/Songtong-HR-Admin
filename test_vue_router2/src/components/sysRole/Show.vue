@@ -1,36 +1,56 @@
 <script lang="ts" setup>
 import { ref, reactive, computed } from "vue";
-import { useRouter } from "vue-router";
+import { getAllRoles, createRole, updateRole, deleteRole } from "../../api/role";
+import { getAllPermissions } from "../../api/permission";
+import { getRolePermissions, updateRolePermissions } from "../../api/rolePermission";
+import type { Role } from "../../types/user";
+import { useClickOutsideClearSelection } from "../../util/useClickOutsideClearSelection";
 
-// 注意：后端接口尚未实现，当前使用占位数据
-interface SysRole {
-  id: number;
-  name: string;
-  code: string;
-  description?: string;
-  status: string;
-  createTime?: string;
-}
-
-const router = useRouter();
 const selectedId = ref(-1);
 const selectedIds = ref<number[]>([]);
+const batchMode = ref(false);
+const loading = ref(false);
+const errorMessage = ref("");
 const datas = reactive({
   form: {
     name: null as string | null,
     code: null as string | null
   },
-  list: [] as SysRole[]
+  list: [] as Role[]
 });
+
+const allPermissions = ref<{ id: number; name: string; code: string }[]>([]);
+const assignedPermissionIds = ref<number[]>([]);
+const showPermDialog = ref(false);
+const currentRole = ref<Role | null>(null);
+
+const showEditDialog = ref(false);
+const editMode = ref<"create" | "edit">("create");
+const editForm = reactive({
+  id: null as number | null,
+  name: "",
+  code: "",
+  description: ""
+});
+
+const toggleBatch = () => {
+  batchMode.value = !batchMode.value;
+  if (!batchMode.value) {
+    selectedIds.value = [];
+    selectedId.value = -1;
+  }
+};
 
 const isAllSelected = computed(() => datas.list.length > 0 && selectedIds.value.length === datas.list.length);
 
 const toggleSelectAll = (checked: boolean) => {
+  if (!batchMode.value) return;
   selectedIds.value = checked ? datas.list.map(r => r.id) : [];
   selectedId.value = checked && datas.list.length > 0 ? datas.list[0].id : -1;
 };
 
 const toggleSelect = (id: number, checked: boolean) => {
+  if (!batchMode.value) return;
   if (checked) {
     if (!selectedIds.value.includes(id)) selectedIds.value.push(id);
     selectedId.value = id;
@@ -40,65 +60,178 @@ const toggleSelect = (id: number, checked: boolean) => {
   }
 };
 
-const isSelected = (id: number) => selectedIds.value.includes(id);
+const isSelected = (id: number) =>
+  batchMode.value ? selectedIds.value.includes(id) : selectedId.value === id;
 
-const search = () => {
-  console.log('搜索角色函数被调用');
-  // TODO: 等待后端接口实现
-  // axios.get('/sysRole', { params: datas.form })
-  //   .then((res) => {
-  //     datas.list = res.data;
-  //   })
-  //   .catch((error) => {
-  //     console.error('角色列表请求失败:', error);
-  //   });
-  
-  // 临时占位数据
-  datas.list = [
-    { id: 1, name: '管理员', code: 'ADMIN', status: '启用', description: '系统管理员角色' },
-    { id: 2, name: '普通用户', code: 'USER', status: '启用', description: '普通用户角色' },
-    { id: 3, name: '访客', code: 'GUEST', status: '启用', description: '访客角色' }
-  ];
+const search = async () => {
+  loading.value = true;
+  errorMessage.value = "";
+  try {
+    const res = await getAllRoles();
+    if (res.code === 200) {
+      datas.list = res.data || [];
+      if (datas.form.name) {
+        datas.list = datas.list.filter(r => r.name?.includes(datas.form.name as string));
+      }
+      if (datas.form.code) {
+        datas.list = datas.list.filter(r => r.code?.includes(datas.form.code as string));
+      }
+    } else {
+      errorMessage.value = res.message || "获取角色列表失败";
+    }
+  } catch (err: any) {
+    console.error("角色列表请求失败:", err);
+    errorMessage.value = err?.message || "角色列表请求失败";
+  } finally {
+    loading.value = false;
+  }
 };
 
 const selectTr = (id: number) => {
-  console.log('选中角色ID:', id);
+  if (batchMode.value) {
   if (selectedIds.value.includes(id)) {
     selectedIds.value = selectedIds.value.filter(v => v !== id);
-    if (selectedId.value === id) {
-      selectedId.value = selectedIds.value[0] ?? -1;
+      if (selectedId.value === id) selectedId.value = selectedIds.value[0] ?? -1;
+    } else {
+      selectedIds.value.push(id);
+      selectedId.value = id;
     }
   } else {
-    selectedIds.value.push(id);
     selectedId.value = id;
   }
 };
 
-const showAdd = () => {
-  console.log('点击了新增按钮');
-  // TODO: 实现角色添加功能
-  alert("角色添加功能开发中，等待后端接口实现");
+const resetEditForm = () => {
+  editForm.id = null;
+  editForm.name = "";
+  editForm.code = "";
+  editForm.description = "";
 };
 
-const showUpdate = () => {
-  console.log('点击了修改按钮');
-  if (selectedId.value > -1) {
-    // TODO: 实现角色修改功能
-    alert("角色修改功能开发中，等待后端接口实现");
-  } else {
-    alert("请选中数据");
+const openAddDialog = () => {
+  resetEditForm();
+  editMode.value = "create";
+  showEditDialog.value = true;
+};
+
+const openEditDialog = () => {
+  if (batchMode.value && selectedIds.value.length !== 1) {
+    alert("批量模式下只能选择一条进行编辑");
+    return;
   }
-};
-
-const deleteData = () => {
-  if (selectedIds.value.length === 0) {
+  if (selectedId.value < 0) {
     alert("请选中数据");
     return;
   }
-  if (!confirm("确定要删除选中的角色吗？（当前为占位操作，未调用后端）")) return;
-  datas.list = datas.list.filter(r => !selectedIds.value.includes(r.id));
+  const current = datas.list.find(r => r.id === selectedId.value);
+  if (!current) return;
+  editMode.value = "edit";
+  editForm.id = current.id ?? null;
+  editForm.name = current.name ?? "";
+  editForm.code = current.code ?? "";
+  editForm.description = (current as any).description ?? "";
+  showEditDialog.value = true;
+};
+
+const submitEdit = async () => {
+  if (!editForm.name || !editForm.code) {
+    alert("名称和编码不能为空");
+    return;
+  }
+  try {
+    const payload = {
+      id: editForm.id ?? undefined,
+      name: editForm.name,
+      code: editForm.code,
+      description: editForm.description || undefined,
+    };
+    const res = editMode.value === "create"
+      ? await createRole(payload)
+      : await updateRole(payload as any);
+    if (res.code === 200 && res.data === true) {
+      alert(editMode.value === "create" ? "新增成功" : "修改成功");
+      showEditDialog.value = false;
+      search();
+    } else {
+      alert(res.message || "提交失败");
+    }
+  } catch (e: any) {
+    alert(e?.message || "提交失败");
+  }
+};
+
+const deleteData = async () => {
+  if (batchMode.value) {
+    if (selectedIds.value.length === 0) {
+      alert("请选中要删除的数据");
+      return;
+    }
+  } else {
+    if (selectedId.value < 0) {
+      alert("请先选中要删除的数据行");
+      return;
+    }
+    selectedIds.value = [selectedId.value];
+  }
+  if (!confirm("确定要删除选中的角色吗？")) return;
+  try {
+    await Promise.all(selectedIds.value.map(id => deleteRole(id)));
+    alert("删除成功");
   selectedIds.value = [];
   selectedId.value = -1;
+    search();
+  } catch (e: any) {
+    alert(e?.message || "删除失败");
+  }
+};
+
+// 使用可复用的点击外部取消选中功能
+useClickOutsideClearSelection(selectedId, selectedIds, batchMode);
+
+// 分配权限
+const openAssignPermissions = async () => {
+  if (batchMode.value && selectedIds.value.length !== 1) {
+    alert("批量模式下只能选择一条进行分配");
+    return;
+  }
+  if (selectedId.value < 0) {
+    alert("请选中角色");
+    return;
+  }
+  currentRole.value = datas.list.find(r => r.id === selectedId.value) || null;
+  if (!currentRole.value) return;
+
+  try {
+    const [permRes, rolePermRes] = await Promise.all([
+      getAllPermissions(),
+      getRolePermissions(currentRole.value.id)
+    ]);
+    if (permRes.code === 200) {
+      allPermissions.value = permRes.data || [];
+    }
+    if (rolePermRes.code === 200) {
+      assignedPermissionIds.value = rolePermRes.data || [];
+    }
+    showPermDialog.value = true;
+  } catch (e: any) {
+    alert(e?.message || "加载权限失败");
+  }
+};
+
+const saveRolePermissions = async () => {
+  if (!currentRole.value) return;
+  try {
+    const res = await updateRolePermissions(currentRole.value.id, assignedPermissionIds.value);
+    if (res.code === 200 && res.data === true) {
+      alert("分配权限成功");
+      showPermDialog.value = false;
+      search();
+    } else {
+      alert(res.message || "分配权限失败");
+    }
+  } catch (e: any) {
+    alert(e?.message || "分配权限失败");
+  }
 };
 
 // 页面加载时自动查询
@@ -107,9 +240,7 @@ search();
 
 <template>
   <div id="container">
-    <div class="notice-box">
-      <p><strong>提示：</strong>角色管理功能正在开发中，等待后端接口实现。</p>
-    </div>
+
     
     <div class="form-horizontal">
       <form class="form-group" @submit.prevent="search">
@@ -128,10 +259,11 @@ search();
       </form>
     </div>
 
+    <div class="table-wrapper">
     <table class="table table-striped table-bordered table-hover">
       <thead>
         <tr>
-          <th class="col-check">
+          <th class="col-check" v-if="batchMode">
             <input type="checkbox" :checked="isAllSelected" @change="toggleSelectAll(($event.target as HTMLInputElement).checked)" />
           </th>
           <th>ID</th>
@@ -143,7 +275,7 @@ search();
       </thead>
       <tbody class="scrollable-tbody">
         <tr class="data" v-for="role in datas.list" v-bind:key="role.id" v-bind:class="{ selected: isSelected(role.id) }" @click="selectTr(role.id)">
-          <td class="col-check">
+          <td class="col-check" v-if="batchMode">
             <input type="checkbox" :checked="isSelected(role.id)" @click.stop @change="toggleSelect(role.id, ($event.target as HTMLInputElement).checked)" />
           </td>
           <td v-text="role.id"></td>
@@ -154,11 +286,56 @@ search();
         </tr>
       </tbody>
     </table>
+    </div>
 
     <div id="buttons">
-      <button type="button" class="btn btn-primary" @click="showAdd">新增</button>
-      <button type="button" class="btn btn-primary" @click="showUpdate">修改</button>
+      <button type="button" class="btn btn-default" @click="toggleBatch">
+        {{ batchMode ? '退出批量' : '批量操作' }}
+      </button>
+      <button type="button" class="btn btn-primary" v-if="!batchMode" @click="openAddDialog">新增</button>
+      <button type="button" class="btn btn-primary" v-if="!batchMode" @click="openEditDialog">修改</button>
       <button type="button" class="btn btn-danger" @click="deleteData">删除</button>
+      <button type="button" class="btn btn-primary" v-if="!batchMode" @click="openAssignPermissions">分配权限</button>
+    </div>
+
+    <!-- 新增/修改弹窗 -->
+    <div v-if="showEditDialog" class="modal-mask">
+      <div class="modal-container">
+        <h4>{{ editMode === 'create' ? '新增角色' : '修改角色' }}</h4>
+        <div class="form-row">
+          <label>角色名称</label>
+          <input v-model="editForm.name" type="text" class="form-control" placeholder="请输入角色名称">
+        </div>
+        <div class="form-row">
+          <label>角色编码</label>
+          <input v-model="editForm.code" type="text" class="form-control" placeholder="请输入角色编码">
+        </div>
+        <div class="form-row">
+          <label>描述</label>
+          <textarea v-model="editForm.description" class="form-control" rows="3" placeholder="请输入描述（可选）"></textarea>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-primary" @click="submitEdit">保存</button>
+          <button class="btn btn-default" @click="showEditDialog = false">取消</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 分配权限弹窗 -->
+    <div v-if="showPermDialog" class="modal-mask">
+      <div class="modal-container">
+        <h4>为 {{ currentRole?.name }} 分配权限</h4>
+        <div class="role-list">
+          <label v-for="p in allPermissions" :key="p.id" class="role-item">
+            <input type="checkbox" :value="p.id" v-model="assignedPermissionIds" />
+            {{ p.name }} ({{ p.code }})
+          </label>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-primary" @click="saveRolePermissions">保存</button>
+          <button class="btn btn-default" @click="showPermDialog = false">取消</button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -169,7 +346,8 @@ search();
   margin: 0;
   padding: 10px;
   box-sizing: border-box;
-  min-height: 100%;
+  height: 100%;
+  min-height: 0;
   display: flex;
   flex-direction: column;
 }
@@ -200,6 +378,66 @@ search();
   margin-top: auto;
   padding-top: 10px;
   align-self: flex-start;
+}
+
+.modal-mask {
+  position: fixed;
+  z-index: 999;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-container {
+  background: #fff;
+  padding: 20px;
+  border-radius: 6px;
+  width: 400px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.form-row {
+  margin-bottom: 12px;
+}
+
+.form-row label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+.form-row .form-control {
+  width: 100%;
+  padding: 6px 10px;
+  box-sizing: border-box;
+}
+
+.role-list {
+  max-height: 240px;
+  overflow: auto;
+  border: 1px solid #eee;
+  padding: 10px;
+  margin: 10px 0;
+}
+
+.role-item {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.modal-actions {
+  text-align: right;
+}
+
+.table-wrapper {
+  flex: 1;
+  overflow: auto;
+  width: 100%;
 }
 
 .table {
