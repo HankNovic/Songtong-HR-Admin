@@ -61,6 +61,27 @@ button:focus-visible {
   padding: 2em;
 }
 
+/* 通用单行省略样式，适用于表格非描述类单元格 */
+.ellipsis-cell {
+  display: inline-block;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+/* 通用描述列多行换行样式 */
+.description-cell {
+  display: inline-block;
+  width: 100%;
+  white-space: normal;
+  word-break: break-all;
+  line-height: 1.5;
+  vertical-align: top;
+}
+
 #app {
   margin: 0;
   padding: 0;

@@ -1,8 +1,11 @@
 <script lang="ts" setup>
 import axios from "../../util/axiosInstance"
-import { ref, reactive, computed } from "vue";
+import { ref, reactive, computed, type Ref } from "vue";
 import { useRouter } from "vue-router";
 import { useClickOutsideClearSelection } from "../../util/useClickOutsideClearSelection";
+import { usePagination } from "../../util/usePagination";
+import { useSyncTableHeader } from "../../util/useSyncTableHeader";
+import BaseTableHeader from "../common/BaseTableHeader.vue";
 
 interface Department {
   id: number;
@@ -21,6 +24,39 @@ const datas = reactive({
   },
   list: [] as Department[]
 });
+
+const depColumns = [
+  { key: "id", title: "ID" },
+  { key: "number", title: "部门编号" },
+  { key: "name", title: "部门名称" },
+];
+
+const headerRef = ref<InstanceType<typeof BaseTableHeader> | null>(null);
+const bodyTableRef = ref<HTMLTableElement | null>(null);
+const bodyWrapperRef = ref<HTMLElement | null>(null);
+
+const {
+  currentPage,
+  pageSize,
+  total,
+  totalPages,
+  pageSizeOptions,
+  pagedData,
+  setPage,
+  setPageSize,
+  hasPrev,
+  hasNext,
+} = usePagination<Department>({
+  source: computed(() => datas.list),
+  storageKey: "pagination_pageSize_department",
+});
+
+useSyncTableHeader(
+  headerRef,
+  bodyTableRef,
+  bodyWrapperRef,
+  [pagedData as unknown as Ref<unknown>, batchMode as unknown as Ref<unknown>]
+);
 
 const toggleBatch = () => {
   batchMode.value = !batchMode.value;
@@ -59,12 +95,22 @@ const search = () => {
     axios.get('/dep23B', { params: datas.form })
       .then((res) => {
         console.log('部门列表请求成功，响应数据:', res.data);
-        datas.list = res.data;
+        let list: Department[] = res.data || [];
+
+        // 前端再次根据表单条件过滤，避免后端未实现筛选时无效
+        if (datas.form.number !== null && datas.form.number !== '' as any) {
+          const keyword = String(datas.form.number as any);
+          list = list.filter(d => String(d.number).includes(keyword));
+        }
+        if (datas.form.name) {
+          const nameKeyword = String(datas.form.name);
+          list = list.filter(d => d.name?.includes(nameKeyword));
+        }
+
         // 按照编号升序排列
-        datas.list.sort((a, b) => {
-          return a.number - b.number;
-        });
-        console.log('部门列表（升序排列）:', datas.list);
+        list.sort((a, b) => a.number - b.number);
+        datas.list = list;
+        console.log('部门列表（筛选+升序排列）:', datas.list);
       })
       .catch((error) => {
         console.error('部门列表请求失败:', error);
@@ -155,52 +201,82 @@ search();
     <div class="form-horizontal">
       <form class="form-group" @submit.prevent="search">
         <div class="col-sm-3">
-          <input type="text" class="form-control" placeholder="部门名称" v-model="datas.form.name">
+          <input type="text" class="form-control" placeholder="部门编号" v-model="datas.form.number">
         </div>
         <div class="col-sm-3">
-          <input type="text" class="form-control" placeholder="部门编号" v-model="datas.form.number">
+          <input type="text" class="form-control" placeholder="部门名称" v-model="datas.form.name">
         </div>
         <div class="col-sm-2">
           <button type="submit" class="btn btn-primary">搜索</button>
-        </div>
-        <div class="col-sm-2">
-          <button type="button" class="btn btn-default" @click="search">刷新</button>
         </div>
       </form>
     </div>
 
     <div class="table-wrapper">
-      <table class="table table-striped table-bordered table-hover">
-        <thead>
-          <tr>
-            <th class="col-check" v-if="batchMode">
-              <input type="checkbox" :checked="isAllSelected" @change="toggleSelectAll(($event.target as HTMLInputElement).checked)" />
-            </th>
-            <th>ID</th>
-            <th>部门编号</th>
-            <th>部门名称</th>
-          </tr>
-        </thead>
-        <tbody class="scrollable-tbody">
-          <tr class="data" v-for="dep in datas.list" v-bind:key="dep.id" v-bind:class="{ selected: isSelected(dep.id) }" @click="selectTr(dep.id)">
-            <td class="col-check" v-if="batchMode">
-              <input type="checkbox" :checked="isSelected(dep.id)" @click.stop @change="toggleSelect(dep.id, ($event.target as HTMLInputElement).checked)" />
-            </td>
-            <td class="table-cell-ellipsis" v-text="dep.id"></td>
-            <td class="table-cell-ellipsis" v-text="dep.number"></td>
-            <td class="table-cell-ellipsis" v-text="dep.name"></td>
-          </tr>
-        </tbody>
-      </table>
+      <BaseTableHeader
+        ref="headerRef"
+        :columns="depColumns"
+        :showCheckbox="batchMode"
+      >
+        <template #checkbox>
+          <input
+            type="checkbox"
+            :checked="isAllSelected"
+            @change="toggleSelectAll(($event.target as HTMLInputElement).checked)"
+          />
+        </template>
+      </BaseTableHeader>
+
+      <div class="table-body-wrapper" ref="bodyWrapperRef">
+        <table
+          ref="bodyTableRef"
+          class="table table-striped table-bordered table-hover"
+        >
+          <tbody class="scrollable-tbody">
+            <tr
+              class="data"
+              v-for="dep in pagedData"
+              :key="dep.id"
+              :class="{ selected: isSelected(dep.id) }"
+              @click="selectTr(dep.id)"
+            >
+              <td class="col-check" v-if="batchMode">
+                <input
+                  type="checkbox"
+                  :checked="isSelected(dep.id)"
+                  @click.stop
+                  @change="toggleSelect(dep.id, ($event.target as HTMLInputElement).checked)"
+                />
+              </td>
+              <td><span class="ellipsis-cell">{{ dep.id }}</span></td>
+              <td><span class="ellipsis-cell">{{ dep.number }}</span></td>
+              <td><span class="ellipsis-cell">{{ dep.name }}</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
-    <div id="buttons">
+    <div class="table-footer">
+      <div class="pagination-wrapper">
+        <span>每页</span>
+        <select v-model.number="pageSize" @change="setPageSize(pageSize)">
+          <option v-for="size in pageSizeOptions" :key="size" :value="size">{{ size }}</option>
+        </select>
+        <span>条，共 {{ total }} 条</span>
+        <button type="button" class="btn btn-default btn-xs" :disabled="!hasPrev" @click="setPage(currentPage - 1)">上一页</button>
+        <span>第 {{ currentPage }} / {{ totalPages }} 页</span>
+        <button type="button" class="btn btn-default btn-xs" :disabled="!hasNext" @click="setPage(currentPage + 1)">下一页</button>
+      </div>
+
+      <div id="buttons">
       <button type="button" class="btn btn-default" @click="toggleBatch">
         {{ batchMode ? '退出批量' : '批量操作' }}
       </button>
       <button type="button" class="btn btn-primary" v-if="!batchMode" @click="showAdd">新增</button>
       <button type="button" class="btn btn-primary" v-if="!batchMode" @click="showUpdate">修改</button>
       <button type="button" class="btn btn-danger" @click="deleteData">删除</button>
+      </div>
     </div>
   </div>
 </template>
@@ -226,15 +302,42 @@ search();
 }
 
 #buttons {
-  margin-top: auto;
   padding-top: 10px;
   align-self: flex-start;
 }
 
 .table-wrapper {
-  flex: 1;
-  overflow: auto;
+  flex: 1 1 auto;
+  overflow: hidden;
   margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.table-body-wrapper {
+  flex: 1 1 auto;
+  overflow: auto;
+}
+
+.table-footer {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.pagination-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.pagination-wrapper select {
+  height: 26px;
+  padding: 2px 6px;
 }
 
 .table {
@@ -243,11 +346,16 @@ search();
   table-layout: fixed;
 }
 
+.table-body-wrapper .table {
+  margin-top: 0;
+}
+
 .table thead th {
   position: sticky;
   top: 0;
   background: var(--color-table-header-bg);
   color: var(--color-table-header-text);
+  border-color: var(--color-table-header-border);
   z-index: 2;
 }
 
@@ -286,12 +394,6 @@ search();
 
 .col-sm-3 {
   width: 25%;
-}
-
-.table-cell-ellipsis {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 </style>
 

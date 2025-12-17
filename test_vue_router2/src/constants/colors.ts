@@ -9,8 +9,9 @@ export const COLORS = {
   textLight: '#fff',
   border: '#ddd',
   bg: '#f5f5f5',
-  tableHeaderBg: '#fafafa',
-  tableHeaderText: '#555',
+  tableHeaderBg: '#e0e8f0', // 浅灰蓝色
+  tableHeaderText: '#333', // 黑色文字
+  tableHeaderBorder: '#a0b0c0', // 表头边框颜色（比普通边框更深）
 };
 
 // 可选：导出一份 CSS 变量映射，方便挂到 root 上使用
@@ -27,5 +28,6 @@ export const COLOR_VARS: Record<string, string> = {
   '--color-bg': COLORS.bg,
   '--color-table-header-bg': COLORS.tableHeaderBg,
   '--color-table-header-text': COLORS.tableHeaderText,
+  '--color-table-header-border': COLORS.tableHeaderBorder,
 };
 

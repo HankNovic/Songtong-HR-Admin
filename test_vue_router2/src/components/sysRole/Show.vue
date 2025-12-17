@@ -1,10 +1,13 @@
 <script lang="ts" setup>
-import { ref, reactive, computed } from "vue";
+import { ref, reactive, computed, type Ref } from "vue";
 import { getAllRoles, createRole, updateRole, deleteRole } from "../../api/role";
 import { getAllPermissions } from "../../api/permission";
 import { getRolePermissions, updateRolePermissions } from "../../api/rolePermission";
 import type { Role } from "../../types/user";
 import { useClickOutsideClearSelection } from "../../util/useClickOutsideClearSelection";
+import { usePagination } from "../../util/usePagination";
+import { useSyncTableHeader } from "../../util/useSyncTableHeader";
+import BaseTableHeader from "../common/BaseTableHeader.vue";
 
 const selectedId = ref(-1);
 const selectedIds = ref<number[]>([]);
@@ -18,6 +21,41 @@ const datas = reactive({
   },
   list: [] as Role[]
 });
+
+const roleColumns = [
+  { key: "id", title: "ID" },
+  { key: "name", title: "角色名称" },
+  { key: "code", title: "角色编码" },
+  { key: "description", title: "描述" },
+  { key: "status", title: "状态", className: "status-col" },
+];
+
+const headerRef = ref<InstanceType<typeof BaseTableHeader> | null>(null);
+const bodyTableRef = ref<HTMLTableElement | null>(null);
+const bodyWrapperRef = ref<HTMLElement | null>(null);
+
+const {
+  currentPage,
+  pageSize,
+  total,
+  totalPages,
+  pageSizeOptions,
+  pagedData,
+  setPage,
+  setPageSize,
+  hasPrev,
+  hasNext,
+} = usePagination<Role>({
+  source: computed(() => datas.list),
+  storageKey: "pagination_pageSize_sysRole",
+});
+
+useSyncTableHeader(
+  headerRef,
+  bodyTableRef,
+  bodyWrapperRef,
+  [pagedData as unknown as Ref<unknown>, batchMode as unknown as Ref<unknown>]
+);
 
 const allPermissions = ref<{ id: number; name: string; code: string }[]>([]);
 const assignedPermissionIds = ref<number[]>([]);
@@ -262,47 +300,74 @@ search();
         <div class="col-sm-2">
           <button type="submit" class="btn btn-primary">搜索</button>
         </div>
-        <div class="col-sm-2">
-          <button type="button" class="btn btn-default" @click="search">刷新</button>
-        </div>
       </form>
     </div>
 
     <div class="table-wrapper">
-    <table class="table table-striped table-bordered table-hover">
-      <thead>
-        <tr>
-          <th class="col-check" v-if="batchMode">
-            <input type="checkbox" :checked="isAllSelected" @change="toggleSelectAll(($event.target as HTMLInputElement).checked)" />
-          </th>
-          <th>ID</th>
-          <th>角色名称</th>
-          <th>角色编码</th>
-          <th>描述</th>
-          <th>状态</th>
-        </tr>
-      </thead>
-      <tbody class="scrollable-tbody">
-        <tr class="data" v-for="role in datas.list" v-bind:key="role.id" v-bind:class="{ selected: isSelected(role.id) }" @click="selectTr(role.id)">
-          <td class="col-check" v-if="batchMode">
-            <input type="checkbox" :checked="isSelected(role.id)" @click.stop @change="toggleSelect(role.id, ($event.target as HTMLInputElement).checked)" />
-          </td>
-          <td class="table-cell-ellipsis" v-text="role.id"></td>
-          <td class="table-cell-ellipsis" v-text="role.name"></td>
-          <td class="table-cell-ellipsis" v-text="role.code"></td>
-          <td v-text="role.description || '-'"></td>
-          <td class="status-col">
-            <span class="status-cell">
-              <span :class="statusDotClass(role.status)"></span>
-              <span>{{ role.status || '启用' }}</span>
-            </span>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+      <BaseTableHeader
+        ref="headerRef"
+        :columns="roleColumns"
+        :showCheckbox="batchMode"
+      >
+        <template #checkbox>
+          <input
+            type="checkbox"
+            :checked="isAllSelected"
+            @change="toggleSelectAll(($event.target as HTMLInputElement).checked)"
+          />
+        </template>
+      </BaseTableHeader>
+
+      <div class="table-body-wrapper" ref="bodyWrapperRef">
+        <table
+          ref="bodyTableRef"
+          class="table table-striped table-bordered table-hover"
+        >
+          <tbody class="scrollable-tbody">
+            <tr
+              class="data"
+              v-for="role in pagedData"
+              :key="role.id"
+              :class="{ selected: isSelected(role.id) }"
+              @click="selectTr(role.id)"
+            >
+              <td class="col-check" v-if="batchMode">
+                <input
+                  type="checkbox"
+                  :checked="isSelected(role.id)"
+                  @click.stop
+                  @change="toggleSelect(role.id, ($event.target as HTMLInputElement).checked)"
+                />
+              </td>
+              <td><span class="ellipsis-cell">{{ role.id }}</span></td>
+              <td><span class="ellipsis-cell">{{ role.name }}</span></td>
+              <td><span class="ellipsis-cell">{{ role.code }}</span></td>
+              <td><span class="description-cell">{{ role.description || '-' }}</span></td>
+              <td class="status-col">
+                <span class="status-cell">
+                  <span :class="statusDotClass(role.status)"></span>
+                  <span>{{ role.status || '启用' }}</span>
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
-    <div id="buttons">
+    <div class="table-footer">
+      <div class="pagination-wrapper">
+        <span>每页</span>
+        <select v-model.number="pageSize" @change="setPageSize(pageSize)">
+          <option v-for="size in pageSizeOptions" :key="size" :value="size">{{ size }}</option>
+        </select>
+        <span>条，共 {{ total }} 条</span>
+        <button type="button" class="btn btn-default btn-xs" :disabled="!hasPrev" @click="setPage(currentPage - 1)">上一页</button>
+        <span>第 {{ currentPage }} / {{ totalPages }} 页</span>
+        <button type="button" class="btn btn-default btn-xs" :disabled="!hasNext" @click="setPage(currentPage + 1)">下一页</button>
+      </div>
+
+      <div id="buttons">
       <button type="button" class="btn btn-default" @click="toggleBatch">
         {{ batchMode ? '退出批量' : '批量操作' }}
       </button>
@@ -310,6 +375,7 @@ search();
       <button type="button" class="btn btn-primary" v-if="!batchMode" @click="openEditDialog">修改</button>
       <button type="button" class="btn btn-danger" @click="deleteData">删除</button>
       <button type="button" class="btn btn-primary" v-if="!batchMode" @click="openAssignPermissions">分配权限</button>
+      </div>
     </div>
 
     <!-- 新增/修改弹窗 -->
@@ -396,7 +462,6 @@ search();
 }
 
 #buttons {
-  margin-top: auto;
   padding-top: 10px;
   align-self: flex-start;
 }
@@ -456,9 +521,38 @@ search();
 }
 
 .table-wrapper {
-  flex: 1;
-  overflow: auto;
+  flex: 1 1 auto;
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
   width: 100%;
+}
+
+.table-body-wrapper {
+  flex: 1 1 auto;
+  overflow: auto;
+}
+
+.table-footer {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.pagination-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.pagination-wrapper select {
+  height: 26px;
+  padding: 2px 6px;
 }
 
 .table {
@@ -467,11 +561,16 @@ search();
   table-layout: fixed;
 }
 
+.table-body-wrapper .table {
+  margin-top: 0;
+}
+
 .table thead th {
   position: sticky;
   top: 0;
   background: var(--color-table-header-bg);
   color: var(--color-table-header-text);
+  border-color: var(--color-table-header-border);
   z-index: 2;
 }
 
@@ -600,12 +699,6 @@ search();
 
 .status-dot--inactive {
   background: #9ca3af;
-}
-
-.table-cell-ellipsis {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 </style>
 

@@ -80,24 +80,27 @@ const handleLogout = () => {
 onMounted(() => {
   // 恢复登录状态
   auth.restoreAuth();
-  
+
   // 如果未登录，跳转到登录页
   if (!auth.isAuthenticated.value) {
     router.push('/login');
     return;
   }
-  
-  // 根据权限跳转到第一个有权限的页面
-  if (hasPermission('employee')) {
-  router.push("/emp/show");
-  } else if (hasPermission('department')) {
-    router.push("/dep/show");
-  } else if (hasPermission('sysUser')) {
-    router.push("/sysUser/show");
-  } else if (hasPermission('sysRole')) {
-    router.push("/sysRole/show");
-  } else if (hasPermission('sysPermission')) {
-    router.push("/sysPermission/show");
+
+  // 仅当当前路径在根路径 "/" 时，才根据权限自动跳转到第一个有权限的页面
+  // 这样在 /emp/show、/sysUser/show 等子路由刷新时，不会被强制跳回 /emp/show
+  if (route.path === '/' || route.name === 'Index') {
+    if (hasPermission('employee')) {
+      router.push("/emp/show");
+    } else if (hasPermission('department')) {
+      router.push("/dep/show");
+    } else if (hasPermission('sysUser')) {
+      router.push("/sysUser/show");
+    } else if (hasPermission('sysRole')) {
+      router.push("/sysRole/show");
+    } else if (hasPermission('sysPermission')) {
+      router.push("/sysPermission/show");
+    }
   }
 });
 </script>

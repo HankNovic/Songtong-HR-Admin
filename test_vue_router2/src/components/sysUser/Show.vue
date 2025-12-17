@@ -1,10 +1,13 @@
 <script lang="ts" setup>
-import { ref, reactive, computed, onMounted } from "vue";
+import { ref, reactive, computed, onMounted, type Ref } from "vue";
 import { getAllUsers, createUser, updateUser, deleteUser } from "../../api/user";
 import { getAllRoles } from "../../api/role";
 import { getUserRoles, updateUserRoles } from "../../api/userRole";
 import type { User } from "../../types/user";
 import { useClickOutsideClearSelection } from "../../util/useClickOutsideClearSelection";
+import { usePagination } from "../../util/usePagination";
+import { useSyncTableHeader } from "../../util/useSyncTableHeader";
+import BaseTableHeader from "../common/BaseTableHeader.vue";
 
 const selectedId = ref(-1);
 const selectedIds = ref<number[]>([]);
@@ -18,6 +21,42 @@ const datas = reactive({
   },
   list: [] as User[]
 });
+
+const userColumns = [
+  { key: "id", title: "ID" },
+  { key: "username", title: "用户名", className: "username-col" },
+  { key: "name", title: "姓名" },
+  { key: "email", title: "邮箱" },
+  { key: "roles", title: "已分配角色" },
+  { key: "status", title: "状态", className: "status-col" },
+];
+
+const headerRef = ref<InstanceType<typeof BaseTableHeader> | null>(null);
+const bodyTableRef = ref<HTMLTableElement | null>(null);
+const bodyWrapperRef = ref<HTMLElement | null>(null);
+
+const {
+  currentPage,
+  pageSize,
+  total,
+  totalPages,
+  pageSizeOptions,
+  pagedData,
+  setPage,
+  setPageSize,
+  hasPrev,
+  hasNext,
+} = usePagination<User>({
+  source: computed(() => datas.list),
+  storageKey: "pagination_pageSize_sysUser",
+});
+
+useSyncTableHeader(
+  headerRef,
+  bodyTableRef,
+  bodyWrapperRef,
+  [pagedData as unknown as Ref<unknown>, batchMode as unknown as Ref<unknown>]
+);
 
 const allRoles = ref<{ id: number; name: string; code: string }[]>([]);
 const assignedRoleIds = ref<number[]>([]);
@@ -274,49 +313,75 @@ search();
         <div class="col-sm-2">
           <button type="submit" class="btn btn-primary">搜索</button>
         </div>
-        <div class="col-sm-2">
-          <button type="button" class="btn btn-default" @click="search">刷新</button>
-        </div>
       </form>
     </div>
 
     <div class="table-wrapper">
-    <table class="table table-striped table-bordered table-hover">
-      <thead>
-        <tr>
-          <th class="col-check" v-if="batchMode">
-            <input type="checkbox" :checked="isAllSelected" @change="toggleSelectAll(($event.target as HTMLInputElement).checked)" />
-          </th>
-          <th>ID</th>
-          <th class="username-col">用户名</th>
-          <th>姓名</th>
-          <th>邮箱</th>
-          <th>已分配角色</th>
-          <th class="status-col">状态</th>
-        </tr>
-      </thead>
-      <tbody class="scrollable-tbody">
-        <tr class="data" v-for="user in datas.list" v-bind:key="user.id" v-bind:class="{ selected: isSelected(user.id) }" @click="selectTr(user.id)">
-          <td class="col-check" v-if="batchMode">
-            <input type="checkbox" :checked="isSelected(user.id)" @click.stop @change="toggleSelect(user.id, ($event.target as HTMLInputElement).checked)" />
-          </td>
-          <td class="table-cell-ellipsis" v-text="user.id"></td>
-          <td class="username-col table-cell-ellipsis" v-text="user.username"></td>
-          <td class="table-cell-ellipsis" v-text="user.name"></td>
-          <td class="table-cell-ellipsis" v-text="user.email || '-'"></td>
-          <td class="table-cell-ellipsis">{{ (user.roles || []).map(r => r.name).join("，") || '-' }}</td>
-          <td class="status-col">
-            <span class="status-cell">
-              <span :class="statusDotClass(user.status)"></span>
-              <span>{{ user.status }}</span>
-            </span>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+      <BaseTableHeader
+        ref="headerRef"
+        :columns="userColumns"
+        :showCheckbox="batchMode"
+      >
+        <template #checkbox>
+          <input
+            type="checkbox"
+            :checked="isAllSelected"
+            @change="toggleSelectAll(($event.target as HTMLInputElement).checked)"
+          />
+        </template>
+      </BaseTableHeader>
+
+      <div class="table-body-wrapper" ref="bodyWrapperRef">
+        <table
+          ref="bodyTableRef"
+          class="table table-striped table-bordered table-hover"
+        >
+          <tbody class="scrollable-tbody">
+            <tr
+              class="data"
+              v-for="user in pagedData"
+              :key="user.id"
+              :class="{ selected: isSelected(user.id) }"
+              @click="selectTr(user.id)"
+            >
+              <td class="col-check" v-if="batchMode">
+                <input
+                  type="checkbox"
+                  :checked="isSelected(user.id)"
+                  @click.stop
+                  @change="toggleSelect(user.id, ($event.target as HTMLInputElement).checked)"
+                />
+              </td>
+              <td><span class="ellipsis-cell">{{ user.id }}</span></td>
+              <td class="username-col"><span class="ellipsis-cell">{{ user.username }}</span></td>
+              <td><span class="ellipsis-cell">{{ user.name }}</span></td>
+              <td><span class="ellipsis-cell">{{ user.email || '-' }}</span></td>
+              <td><span class="ellipsis-cell">{{ (user.roles || []).map(r => r.name).join("，") || '-' }}</span></td>
+              <td class="status-col">
+                <span class="status-cell">
+                  <span :class="statusDotClass(user.status)"></span>
+                  <span>{{ user.status }}</span>
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
-    <div id="buttons">
+    <div class="table-footer">
+      <div class="pagination-wrapper">
+        <span>每页</span>
+        <select v-model.number="pageSize" @change="setPageSize(pageSize)">
+          <option v-for="size in pageSizeOptions" :key="size" :value="size">{{ size }}</option>
+        </select>
+        <span>条，共 {{ total }} 条</span>
+        <button type="button" class="btn btn-default btn-xs" :disabled="!hasPrev" @click="setPage(currentPage - 1)">上一页</button>
+        <span>第 {{ currentPage }} / {{ totalPages }} 页</span>
+        <button type="button" class="btn btn-default btn-xs" :disabled="!hasNext" @click="setPage(currentPage + 1)">下一页</button>
+      </div>
+
+      <div id="buttons">
       <button type="button" class="btn btn-default" @click="toggleBatch">
         {{ batchMode ? '退出批量' : '批量操作' }}
       </button>
@@ -324,6 +389,7 @@ search();
       <button type="button" class="btn btn-primary" v-if="!batchMode" @click="showUpdate">修改</button>
       <button type="button" class="btn btn-danger" @click="deleteData">删除</button>
       <button type="button" class="btn btn-primary" v-if="!batchMode" @click="openAssignRoles">分配角色</button>
+      </div>
     </div>
 
     <!-- 分配角色弹窗 -->
@@ -418,7 +484,6 @@ search();
 }
 
 #buttons {
-  margin-top: auto;
   padding-top: 10px;
   align-self: flex-start;
 }
@@ -524,9 +589,6 @@ search();
   width: 200px;
   min-width: 200px;
   max-width: 200px;
-}
-
-.table-cell-ellipsis {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -534,9 +596,38 @@ search();
 
 
 .table-wrapper {
-  flex: 1;
-  overflow: auto;
+  flex: 1 1 auto;
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
   width: 100%;
+}
+
+.table-body-wrapper {
+  flex: 1 1 auto;
+  overflow: auto;
+}
+
+.table-footer {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.pagination-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.pagination-wrapper select {
+  height: 26px;
+  padding: 2px 6px;
 }
 
 .table {
@@ -545,11 +636,16 @@ search();
   table-layout: fixed;
 }
 
+.table-body-wrapper .table {
+  margin-top: 0;
+}
+
 .table thead th {
   position: sticky;
   top: 0;
   background: var(--color-table-header-bg);
   color: var(--color-table-header-text);
+  border-color: var(--color-table-header-border);
   z-index: 2;
 }
 
