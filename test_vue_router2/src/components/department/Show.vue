@@ -243,7 +243,7 @@ search();
           ref="bodyTableRef"
           class="table table-striped table-bordered table-hover"
         >
-          <tbody class="scrollable-tbody">
+        <tbody class="scrollable-tbody">
             <tr
               class="data"
               v-for="dep in pagedData"
@@ -258,14 +258,14 @@ search();
                   @click.stop
                   @change="toggleSelect(dep.id, ($event.target as HTMLInputElement).checked)"
                 />
-              </td>
+            </td>
               <td><span class="ellipsis-cell">{{ dep.id }}</span></td>
               <td><span class="ellipsis-cell">{{ dep.number }}</span></td>
               <td><span class="ellipsis-cell">{{ dep.name }}</span></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+          </tr>
+        </tbody>
+      </table>
+    </div>
     </div>
 
     <div class="table-footer">
@@ -280,7 +280,7 @@ search();
         <button type="button" class="btn btn-default btn-xs" v-auto-blur :disabled="!hasNext" @click="setPage(currentPage + 1)">下一页</button>
       </div>
 
-      <div id="buttons">
+    <div id="buttons">
       <button type="button" class="btn btn-default" v-auto-blur @click="toggleBatch">
         {{ batchMode ? '退出批量' : '批量操作' }}
       </button>

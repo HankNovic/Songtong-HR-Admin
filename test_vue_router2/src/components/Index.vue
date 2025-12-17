@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { onMounted, ref, computed } from "vue";
+import { onMounted, onBeforeUnmount, ref, computed } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useAuth } from "../stores/auth";
 import { useTheme } from "../util/useTheme";
@@ -79,6 +79,30 @@ const handleLogout = () => {
   }
 };
 
+// 移动端横屏缩放适配
+const containerRef = ref<HTMLElement | null>(null);
+const DESIGN_WIDTH = 1200; // 设计基准宽度
+
+const updateScale = () => {
+  if (!containerRef.value) return;
+  
+  const isMobile = window.innerWidth <= 1024;
+  const isLandscape = window.matchMedia('(orientation: landscape)').matches;
+  
+  if (isMobile && isLandscape) {
+    const scale = window.innerWidth / DESIGN_WIDTH;
+    containerRef.value.style.transform = `scale(${scale})`;
+    containerRef.value.style.transformOrigin = 'top left';
+    // 调整容器高度，避免缩放后底部被裁切
+    const scaledHeight = window.innerHeight / scale;
+    containerRef.value.style.height = `${scaledHeight}px`;
+  } else {
+    // 非移动端或竖屏时，恢复默认
+    containerRef.value.style.transform = '';
+    containerRef.value.style.height = '';
+  }
+};
+
 onMounted(() => {
   // 恢复登录状态
   auth.restoreAuth();
@@ -104,10 +128,23 @@ onMounted(() => {
       router.push("/sysPermission/show");
     }
   }
+
+  // 移动端横屏缩放适配
+  updateScale();
+  window.addEventListener('resize', updateScale);
+  window.addEventListener('orientationchange', () => {
+    // 方向改变后稍微延迟一下，确保窗口尺寸已更新
+    setTimeout(updateScale, 100);
+  });
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', updateScale);
+  window.removeEventListener('orientationchange', updateScale);
 });
 </script>
 <template>
-<div id="container">
+<div id="container" ref="containerRef">
 <div id="top">
   <div id="logo">{{ pageTitle }}</div>
   <div id="user-info">
@@ -621,6 +658,66 @@ a {
 
   #right {
     padding: 5px;
+  }
+}
+
+/* 移动端横屏 + 缩放适配 */
+@media (max-width: 1024px) and (orientation: landscape) {
+  /* 横屏模式下，根据屏幕宽度自动缩放 */
+  #container {
+    transform-origin: top left;
+  }
+}
+
+@media (max-width: 1024px) and (orientation: portrait) {
+  /* 竖屏模式下，提示用户横屏 */
+  #container::before {
+    content: '请将设备横屏以获得最佳体验';
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(90deg);
+    background: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    padding: 20px 40px;
+    border-radius: 8px;
+    font-size: 18px;
+    z-index: 10000;
+    white-space: nowrap;
+  }
+}
+
+/* 移动端横屏缩放：根据屏幕宽度自动适配 */
+@media (max-width: 1024px) and (orientation: landscape) {
+  #app {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  #container {
+    width: 1200px; /* 设计基准宽度，JS 会根据屏幕宽度动态缩放 */
+    transform-origin: top left;
+  }
+}
+
+/* 小屏横屏（手机横屏）特殊处理 */
+@media (max-width: 896px) and (orientation: landscape) {
+  #top {
+    height: 50px;
+    padding: 0 10px;
+  }
+
+  #top #logo {
+    font-size: 18px;
+  }
+
+  #left {
+    width: 200px;
+  }
+
+  #left.collapsed {
+    width: 60px;
   }
 }
 </style>
