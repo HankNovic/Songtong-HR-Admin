@@ -242,8 +242,10 @@ search();
           <td v-text="permission.code"></td>
           <td v-text="permission.description || '-'"></td>
           <td class="status-col">
-            <span :class="statusDotClass(permission.status)"></span>
-            <span>{{ permission.status || '启用' }}</span>
+            <span class="status-cell">
+              <span :class="statusDotClass(permission.status)"></span>
+              <span>{{ permission.status || '启用' }}</span>
+            </span>
           </td>
         </tr>
       </tbody>
@@ -497,15 +499,13 @@ search();
   min-width: 120px;
   text-align: left;
   vertical-align: middle;
-  padding: 8px;
 }
 
-td.status-col {
-  display: flex;
+.status-cell {
+  display: inline-flex;
   align-items: center;
   gap: 6px;
   white-space: nowrap;
-  box-sizing: border-box;
 }
 
 .status-dot {

@@ -30,7 +30,8 @@ const editForm = reactive({
   id: null as number | null,
   name: "",
   code: "",
-  description: ""
+  description: "",
+  status: "启用"
 });
 
 const toggleBatch = () => {
@@ -106,6 +107,7 @@ const resetEditForm = () => {
   editForm.name = "";
   editForm.code = "";
   editForm.description = "";
+  editForm.status = "启用";
 };
 
 const openAddDialog = () => {
@@ -130,6 +132,7 @@ const openEditDialog = () => {
   editForm.name = current.name ?? "";
   editForm.code = current.code ?? "";
   editForm.description = (current as any).description ?? "";
+  editForm.status = (current as any).status || "启用";
   showEditDialog.value = true;
 };
 
@@ -144,6 +147,7 @@ const submitEdit = async () => {
       name: editForm.name,
       code: editForm.code,
       description: editForm.description || undefined,
+      status: editForm.status || "启用",
     };
     const res = editMode.value === "create"
       ? await createRole(payload)
@@ -183,6 +187,11 @@ const deleteData = async () => {
   } catch (e: any) {
     alert(e?.message || "删除失败");
   }
+};
+
+const statusDotClass = (status?: string) => {
+  const normalized = status || "启用";
+  return normalized === "启用" ? "status-dot status-dot--active" : "status-dot status-dot--inactive";
 };
 
 // 使用可复用的点击外部取消选中功能
@@ -282,7 +291,12 @@ search();
           <td v-text="role.name"></td>
           <td v-text="role.code"></td>
           <td v-text="role.description || '-'"></td>
-          <td v-text="role.status"></td>
+          <td class="status-col">
+            <span class="status-cell">
+              <span :class="statusDotClass(role.status)"></span>
+              <span>{{ role.status || '启用' }}</span>
+            </span>
+          </td>
         </tr>
       </tbody>
     </table>
@@ -313,6 +327,13 @@ search();
         <div class="form-row">
           <label>描述</label>
           <textarea v-model="editForm.description" class="form-control" rows="3" placeholder="请输入描述（可选）"></textarea>
+        </div>
+        <div class="form-row">
+          <label>状态</label>
+          <select v-model="editForm.status" class="form-control">
+            <option value="启用">启用</option>
+            <option value="禁用">禁用</option>
+          </select>
         </div>
         <div class="modal-actions">
           <button class="btn btn-primary" @click="submitEdit">保存</button>
@@ -548,6 +569,37 @@ search();
 .btn-danger:hover {
   background-color: #c9302c;
   border-color: #ac2925;
+}
+
+.status-col {
+  width: 120px;
+  min-width: 120px;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.status-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #9ca3af;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.status-dot--active {
+  background: #22c55e;
+}
+
+.status-dot--inactive {
+  background: #9ca3af;
 }
 </style>
 

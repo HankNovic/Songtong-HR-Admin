@@ -306,8 +306,10 @@ search();
           <td v-text="user.email || '-'"></td>
           <td>{{ (user.roles || []).map(r => r.name).join("，") || '-' }}</td>
           <td class="status-col">
-            <span :class="statusDotClass(user.status)"></span>
-            <span>{{ user.status }}</span>
+            <span class="status-cell">
+              <span :class="statusDotClass(user.status)"></span>
+              <span>{{ user.status }}</span>
+            </span>
           </td>
         </tr>
       </tbody>
@@ -492,15 +494,13 @@ search();
   min-width: 120px;
   text-align: left;
   vertical-align: middle;
-  padding: 8px;
 }
 
-td.status-col {
-  display: flex;
+.status-cell {
+  display: inline-flex;
   align-items: center;
   gap: 6px;
   white-space: nowrap;
-  box-sizing: border-box;
 }
 
 .status-dot {
