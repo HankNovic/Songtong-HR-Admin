@@ -186,9 +186,9 @@ search();
             <td class="col-check" v-if="batchMode">
               <input type="checkbox" :checked="isSelected(dep.id)" @click.stop @change="toggleSelect(dep.id, ($event.target as HTMLInputElement).checked)" />
             </td>
-            <td v-text="dep.id"></td>
-            <td v-text="dep.number"></td>
-            <td v-text="dep.name"></td>
+            <td class="table-cell-ellipsis" v-text="dep.id"></td>
+            <td class="table-cell-ellipsis" v-text="dep.number"></td>
+            <td class="table-cell-ellipsis" v-text="dep.name"></td>
           </tr>
         </tbody>
       </table>
@@ -286,6 +286,12 @@ search();
 
 .col-sm-3 {
   width: 25%;
+}
+
+.table-cell-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>
 

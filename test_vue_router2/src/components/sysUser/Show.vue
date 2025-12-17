@@ -300,11 +300,11 @@ search();
           <td class="col-check" v-if="batchMode">
             <input type="checkbox" :checked="isSelected(user.id)" @click.stop @change="toggleSelect(user.id, ($event.target as HTMLInputElement).checked)" />
           </td>
-          <td v-text="user.id"></td>
-          <td class="username-col" v-text="user.username"></td>
-          <td v-text="user.name"></td>
-          <td v-text="user.email || '-'"></td>
-          <td>{{ (user.roles || []).map(r => r.name).join("，") || '-' }}</td>
+          <td class="table-cell-ellipsis" v-text="user.id"></td>
+          <td class="username-col table-cell-ellipsis" v-text="user.username"></td>
+          <td class="table-cell-ellipsis" v-text="user.name"></td>
+          <td class="table-cell-ellipsis" v-text="user.email || '-'"></td>
+          <td class="table-cell-ellipsis">{{ (user.roles || []).map(r => r.name).join("，") || '-' }}</td>
           <td class="status-col">
             <span class="status-cell">
               <span :class="statusDotClass(user.status)"></span>
@@ -524,6 +524,9 @@ search();
   width: 200px;
   min-width: 200px;
   max-width: 200px;
+}
+
+.table-cell-ellipsis {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

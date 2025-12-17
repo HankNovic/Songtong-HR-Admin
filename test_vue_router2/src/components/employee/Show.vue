@@ -232,11 +232,11 @@ searchDep();
             <td class="col-check" v-if="batchMode">
               <input type="checkbox" :checked="isSelected(emp.id)" @click.stop @change="toggleSelect(emp.id, ($event.target as HTMLInputElement).checked)" />
             </td>
-            <td v-text="emp.number"></td>
-            <td v-text="emp.name"></td>
-            <td v-text="emp.gender"></td>
-            <td v-text="emp.age"></td>
-            <td v-text="emp.dep != null ? emp.dep.name : ''"></td>
+            <td class="table-cell-ellipsis" v-text="emp.number"></td>
+            <td class="table-cell-ellipsis" v-text="emp.name"></td>
+            <td class="table-cell-ellipsis" v-text="emp.gender"></td>
+            <td class="table-cell-ellipsis" v-text="emp.age"></td>
+            <td class="table-cell-ellipsis" v-text="emp.dep != null ? emp.dep.name : ''"></td>
           </tr>
         </tbody>
       </table>
@@ -315,5 +315,11 @@ searchDep();
 
 .col-check input {
   margin: 0;
+}
+
+.table-cell-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>

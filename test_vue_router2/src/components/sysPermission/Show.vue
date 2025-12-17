@@ -237,9 +237,9 @@ search();
           <td class="col-check" v-if="batchMode">
             <input type="checkbox" :checked="isSelected(permission.id)" @click.stop @change="toggleSelect(permission.id, ($event.target as HTMLInputElement).checked)" />
           </td>
-          <td v-text="permission.id"></td>
-          <td v-text="permission.name"></td>
-          <td v-text="permission.code"></td>
+          <td class="table-cell-ellipsis" v-text="permission.id"></td>
+          <td class="table-cell-ellipsis" v-text="permission.name"></td>
+          <td class="table-cell-ellipsis" v-text="permission.code"></td>
           <td v-text="permission.description || '-'"></td>
           <td class="status-col">
             <span class="status-cell">
@@ -523,6 +523,12 @@ search();
 
 .status-dot--inactive {
   background: #9ca3af;
+}
+
+.table-cell-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>
 
