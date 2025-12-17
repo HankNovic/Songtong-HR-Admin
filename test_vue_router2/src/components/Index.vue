@@ -2,10 +2,12 @@
 import { onMounted, ref, computed } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useAuth } from "../stores/auth";
+import { useTheme } from "../util/useTheme";
 
 const router = useRouter();
 const route = useRoute();
 const auth = useAuth();
+const { theme, toggleTheme } = useTheme();
 
 // 控制各个菜单的展开/收起状态
 const empExpanded = ref(true);
@@ -107,11 +109,48 @@ onMounted(() => {
 <template>
 <div id="container">
 <div id="top">
-<div id="logo">{{ pageTitle }}</div>
-<div id="user-info">
-  <span class="username">{{ auth.user.value?.username || '未登录' }}</span>
-  <button class="logout-btn" @click="handleLogout">退出</button>
-</div>
+  <div id="logo">{{ pageTitle }}</div>
+  <div id="user-info">
+    <button
+      class="theme-btn"
+      @click="toggleTheme"
+      :title="theme === 'light' ? '切换到暗色模式' : '切换到亮色模式'"
+    >
+      <!-- 亮色模式下显示太阳 -->
+      <svg
+        v-if="theme === 'light'"
+        class="theme-icon"
+        viewBox="0 0 24 24"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <circle cx="12" cy="12" r="4" fill="currentColor" />
+        <path
+          d="M12 2V4M12 20V22M4.22 4.22L5.64 5.64M18.36 18.36L19.78 19.78
+             M2 12H4M20 12H22M4.22 19.78L5.64 18.36M18.36 5.64L19.78 4.22"
+          stroke="currentColor"
+          stroke-width="1.6"
+          stroke-linecap="round"
+        />
+      </svg>
+      <!-- 暗色模式下显示月亮 -->
+      <svg
+        v-else
+        class="theme-icon"
+        viewBox="0 0 24 24"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M21 12.79C20.37 12.93 19.71 13 19.03 13C14.06 13 10.03 8.97 10.03 4
+             C10.03 3.32 10.1 2.66 10.24 2.03C6.76 2.8 4.03 5.94 4.03 9.63
+             C4.03 14.07 7.59 17.63 12.03 17.63C15.72 17.63 18.86 14.9 19.63 11.42
+             Z"
+          fill="currentColor"
+        />
+      </svg>
+    </button>
+    <span class="username">{{ auth.user.value?.username || '未登录' }}</span>
+    <button class="logout-btn" @click="handleLogout">账号退出</button>
+  </div>
 </div>
 <div id="main">
 <div id="left" :class="{ collapsed }">
@@ -245,24 +284,55 @@ onMounted(() => {
   gap: 15px;
 }
 
+.theme-btn {
+  padding: 6px;
+  background: transparent;
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 13px;
+  outline: none;
+}
+
+.theme-btn:focus,
+.theme-btn:focus-visible,
+.theme-btn:active {
+  outline: none;
+  box-shadow: none;
+}
+
+.theme-icon {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+
 .username {
   color: #fff;
   font-size: 14px;
 }
 
 .logout-btn {
-  padding: 6px 16px;
-  background: rgba(255, 255, 255, 0.2);
+  padding: 0;
+  background: transparent;
   color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 4px;
+  border: none;
+  border-radius: 0;
   cursor: pointer;
   font-size: 14px;
-  transition: background-color 0.3s;
+  outline: none;
 }
 
 .logout-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
+  text-decoration: underline;
+}
+
+.logout-btn:focus,
+.logout-btn:focus-visible,
+.logout-btn:active {
+  outline: none;
+  box-shadow: none;
 }
 
 #bottom {
@@ -330,7 +400,8 @@ a {
   flex: 1;
   overflow: hidden;
   padding: 10px;
-  background: #fff;
+  background: var(--color-bg);
+  color: var(--color-text);
 }
 
 .yi {
@@ -382,8 +453,8 @@ a {
   border: none;
   outline: none;
   border-radius: 0 12px 12px 0;
-  background: #fff;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  background: var(--color-surface);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -412,8 +483,8 @@ a {
 .preview {
   position: absolute;
   left: 72px;
-  background: #fff;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+  background: var(--color-surface);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.35);
   border-radius: 8px;
   padding: 8px 0;
   min-width: 180px;
@@ -423,13 +494,13 @@ a {
 .preview-item {
   display: block;
   padding: 8px 16px;
-  color: #333;
+  color: var(--color-text);
   text-decoration: none;
   font-size: 14px;
 }
 
 .preview-item:hover {
-  background: #f5f7fa;
+  background: var(--color-table-row-hover-bg);
 }
 
 .yi .arrow {

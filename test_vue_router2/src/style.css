@@ -31,6 +31,8 @@ body {
   width: 100%;
   height: 100%;
   overflow-x: hidden;
+  background: var(--color-bg);
+  color: var(--color-text);
 }
 
 h1 {
@@ -48,6 +50,56 @@ button {
   background-color: #1a1a1a;
   cursor: pointer;
   transition: border-color 0.25s;
+}
+
+/* 通用表单暗/亮主题适配（Bootstrap form-control） */
+.form-horizontal,
+.form-horizontal label,
+.form-group,
+.form-group label {
+  color: var(--color-text);
+}
+
+.form-control {
+  background-color: var(--color-input-bg) !important;
+  color: var(--color-input-text) !important;
+  border-color: var(--color-input-border) !important;
+}
+
+.form-control::placeholder {
+  color: color-mix(in srgb, var(--color-input-text) 55%, transparent);
+}
+
+/* select 下拉箭头在深色背景下更清晰一些 */
+select.form-control {
+  color: var(--color-input-text) !important;
+}
+
+/* 暗色模式下，原生 select 下拉框背景 & 文字颜色调整 */
+[data-theme="dark"] select,
+[data-theme="dark"] option {
+  background-color: #111315;
+  color: #f1f3f5;
+}
+
+/* 通用表格条纹 & hover 颜色（基于主题变量） */
+.table-striped > tbody > tr:nth-of-type(odd) {
+  background-color: var(--color-table-row-bg) !important;
+}
+
+.table-striped > tbody > tr:nth-of-type(even) {
+  background-color: var(--color-table-row-alt-bg) !important;
+}
+
+.table-hover > tbody > tr:hover {
+  background-color: var(--color-table-row-hover-bg) !important;
+  color: var(--color-text) !important;
+}
+
+/* 数据选中行：无论暗/亮主题，都使用统一的主色蓝色 */
+.table-striped > tbody > tr.selected {
+  background-color: var(--color-primary) !important;
+  color: var(--color-text-light) !important;
 }
 button:hover {
   border-color: #646cff;

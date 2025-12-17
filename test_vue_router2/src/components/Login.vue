@@ -102,7 +102,7 @@ const handleKeyup = (event: KeyboardEvent) => {
 .login-box {
   width: 400px;
   padding: 40px;
-  background: #fff;
+  background: var(--color-surface);
   border-radius: 8px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
 }
@@ -126,18 +126,20 @@ const handleKeyup = (event: KeyboardEvent) => {
 .form-group label {
   display: block;
   margin-bottom: 8px;
-  color: #333;
+  color: var(--color-text);
   font-weight: 500;
 }
 
 .form-control {
   width: 100%;
   padding: 12px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--color-input-border);
   border-radius: 4px;
   font-size: 14px;
   box-sizing: border-box;
   transition: border-color 0.3s;
+  background-color: var(--color-input-bg);
+  color: var(--color-input-text);
 }
 
 .form-control:focus {
@@ -146,7 +148,7 @@ const handleKeyup = (event: KeyboardEvent) => {
 }
 
 .form-control:disabled {
-  background-color: #f5f5f5;
+  background-color: rgba(0, 0, 0, 0.1);
   cursor: not-allowed;
 }
 
@@ -189,7 +191,7 @@ const handleKeyup = (event: KeyboardEvent) => {
 
 .login-tip {
   text-align: center;
-  color: #666;
+  color: var(--color-text);
   font-size: 12px;
 }
 
