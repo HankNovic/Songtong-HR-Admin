@@ -3,6 +3,7 @@ import './style.css'
 import App from './App.vue'
 import router from './router'
 import { applyTheme, getInitialTheme } from './util/useTheme'
+import { autoBlur } from './directives/autoBlur'
 
 import "jquery"
 import "bootstrap"
@@ -19,4 +20,7 @@ if (savedUser || savedPermissions || savedRoles) {
   // 登录状态会在路由守卫中恢复
 }
 
-createApp(App).use(router).mount('#app')
+const app = createApp(App);
+app.use(router);
+app.directive('auto-blur', autoBlur);
+app.mount('#app');

@@ -7,6 +7,7 @@ import type { User } from "../../types/user";
 import { useClickOutsideClearSelection } from "../../util/useClickOutsideClearSelection";
 import { usePagination } from "../../util/usePagination";
 import { useSyncTableHeader } from "../../util/useSyncTableHeader";
+import { useSearchReset } from "../../util/useSearchReset";
 import BaseTableHeader from "../common/BaseTableHeader.vue";
 
 const selectedId = ref(-1);
@@ -14,11 +15,13 @@ const selectedIds = ref<number[]>([]);
 const batchMode = ref(false);
 const loading = ref(false);
 const errorMessage = ref("");
+const createInitialForm = () => ({
+  username: null as string | null,
+  name: null as string | null,
+});
+
 const datas = reactive({
-  form: {
-    username: null as string | null,
-    name: null as string | null
-  },
+  form: createInitialForm(),
   list: [] as User[]
 });
 
@@ -50,6 +53,13 @@ const {
   source: computed(() => datas.list),
   storageKey: "pagination_pageSize_sysUser",
 });
+
+const { reset: resetSearchForm } = useSearchReset(datas.form, createInitialForm);
+
+const resetSearch = () => {
+  resetSearchForm();
+  search();
+};
 
 useSyncTableHeader(
   headerRef,
@@ -310,8 +320,9 @@ search();
         <div class="col-sm-3">
           <input type="text" class="form-control" placeholder="姓名" v-model="datas.form.name">
         </div>
-        <div class="col-sm-2">
-          <button type="submit" class="btn btn-primary">搜索</button>
+        <div class="col-sm-3">
+          <button type="submit" class="btn btn-primary" v-auto-blur>搜索</button>
+          <button type="button" class="btn btn-default" v-auto-blur style="margin-left: 8px;" @click="resetSearch">重置</button>
         </div>
       </form>
     </div>
@@ -336,7 +347,7 @@ search();
           ref="bodyTableRef"
           class="table table-striped table-bordered table-hover"
         >
-          <tbody class="scrollable-tbody">
+      <tbody class="scrollable-tbody">
             <tr
               class="data"
               v-for="user in pagedData"
@@ -362,10 +373,10 @@ search();
                   <span :class="statusDotClass(user.status)"></span>
                   <span>{{ user.status }}</span>
                 </span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+          </td>
+        </tr>
+      </tbody>
+    </table>
       </div>
     </div>
 
@@ -376,19 +387,19 @@ search();
           <option v-for="size in pageSizeOptions" :key="size" :value="size">{{ size }}</option>
         </select>
         <span>条，共 {{ total }} 条</span>
-        <button type="button" class="btn btn-default btn-xs" :disabled="!hasPrev" @click="setPage(currentPage - 1)">上一页</button>
+        <button type="button" class="btn btn-default btn-xs" v-auto-blur :disabled="!hasPrev" @click="setPage(currentPage - 1)">上一页</button>
         <span>第 {{ currentPage }} / {{ totalPages }} 页</span>
-        <button type="button" class="btn btn-default btn-xs" :disabled="!hasNext" @click="setPage(currentPage + 1)">下一页</button>
+        <button type="button" class="btn btn-default btn-xs" v-auto-blur :disabled="!hasNext" @click="setPage(currentPage + 1)">下一页</button>
       </div>
 
-      <div id="buttons">
-      <button type="button" class="btn btn-default" @click="toggleBatch">
+    <div id="buttons">
+      <button type="button" class="btn btn-default" v-auto-blur @click="toggleBatch">
         {{ batchMode ? '退出批量' : '批量操作' }}
       </button>
-      <button type="button" class="btn btn-primary" v-if="!batchMode" @click="showAdd">新增</button>
-      <button type="button" class="btn btn-primary" v-if="!batchMode" @click="showUpdate">修改</button>
-      <button type="button" class="btn btn-danger" @click="deleteData">删除</button>
-      <button type="button" class="btn btn-primary" v-if="!batchMode" @click="openAssignRoles">分配角色</button>
+      <button type="button" class="btn btn-primary" v-auto-blur v-if="!batchMode" @click="showAdd">新增</button>
+      <button type="button" class="btn btn-primary" v-auto-blur v-if="!batchMode" @click="showUpdate">修改</button>
+      <button type="button" class="btn btn-danger" v-auto-blur @click="deleteData">删除</button>
+      <button type="button" class="btn btn-primary" v-auto-blur v-if="!batchMode" @click="openAssignRoles">分配角色</button>
       </div>
     </div>
 
@@ -403,8 +414,8 @@ search();
           </label>
         </div>
         <div class="modal-actions">
-          <button class="btn btn-primary" @click="saveUserRoles">保存</button>
-          <button class="btn btn-default" @click="showRoleDialog = false">取消</button>
+          <button class="btn btn-primary" v-auto-blur @click="saveUserRoles">保存</button>
+          <button class="btn btn-default" v-auto-blur @click="showRoleDialog = false">取消</button>
         </div>
       </div>
     </div>

@@ -20,6 +20,7 @@ export const LIGHT_COLORS = {
   tableRowBg: '#ffffff',
   tableRowAltBg: '#f8f9fa',
   tableRowHoverBg: '#e6f0ff',
+  shadowSoft: 'rgba(0, 0, 0, 0.45)',
 };
 
 // 暗色主题颜色（基础版，可按需微调）
@@ -44,6 +45,7 @@ export const DARK_COLORS = {
   tableRowBg: '#202225',
   tableRowAltBg: '#181a1f',
   tableRowHoverBg: '#2f343b',
+  shadowSoft: 'rgba(255, 255, 255, 0.35)',
 };
 
 export type ThemeName = 'light' | 'dark';
@@ -71,6 +73,7 @@ export const THEME_COLOR_VARS: Record<ThemeName, Record<string, string>> = {
     '--color-table-row-bg': LIGHT_COLORS.tableRowBg,
     '--color-table-row-alt-bg': LIGHT_COLORS.tableRowAltBg,
     '--color-table-row-hover-bg': LIGHT_COLORS.tableRowHoverBg,
+    '--color-shadow-soft': LIGHT_COLORS.shadowSoft,
   },
   dark: {
     '--color-primary': DARK_COLORS.primary,
@@ -93,6 +96,7 @@ export const THEME_COLOR_VARS: Record<ThemeName, Record<string, string>> = {
     '--color-table-row-bg': DARK_COLORS.tableRowBg,
     '--color-table-row-alt-bg': DARK_COLORS.tableRowAltBg,
     '--color-table-row-hover-bg': DARK_COLORS.tableRowHoverBg,
+    '--color-shadow-soft': DARK_COLORS.shadowSoft,
   },
 };
 

@@ -93,7 +93,7 @@ onMounted(() => {
   // 这样在 /emp/show、/sysUser/show 等子路由刷新时，不会被强制跳回 /emp/show
   if (route.path === '/' || route.name === 'Index') {
     if (hasPermission('employee')) {
-      router.push("/emp/show");
+  router.push("/emp/show");
     } else if (hasPermission('department')) {
       router.push("/dep/show");
     } else if (hasPermission('sysUser')) {
@@ -454,7 +454,8 @@ a {
   outline: none;
   border-radius: 0 12px 12px 0;
   background: var(--color-surface);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  /* 阴影整体偏向右下，亮色为黑色阴影，暗色为白色阴影 */
+  box-shadow: 3px 4px 8px var(--color-shadow-soft);
   display: flex;
   align-items: center;
   justify-content: center;

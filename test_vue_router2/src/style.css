@@ -101,12 +101,56 @@ select.form-control {
   background-color: var(--color-primary) !important;
   color: var(--color-text-light) !important;
 }
-button:hover {
-  border-color: #646cff;
+
+/* 批量操作下的“全选”复选框在表头/单元格中居中 */
+.table .col-check {
+  text-align: center;
+  vertical-align: middle;
 }
+
+.table .col-check input[type="checkbox"] {
+  display: block;
+  margin: 0 auto;
+}
+button:hover {
+  border-color: transparent;
+}
+
 button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+button:focus-visible,
+button:active,
+.btn:focus,
+.btn:focus-visible,
+.btn:active {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* 保证交互后按钮能快速恢复原样颜色（覆盖 bootstrap 的 focus/active 变灰效果） */
+.btn-primary {
+  background-color: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+  color: #fff !important;
+}
+
+.btn-primary:hover,
+.btn-primary:active {
+  background-color: var(--color-primary-hover) !important;
+  border-color: var(--color-primary-hover) !important;
+  color: #fff !important;
+}
+
+.btn-default {
+  background-color: #fff !important;
+  border-color: #ccc !important;
+  color: #333 !important;
+}
+
+.btn-default:hover,
+.btn-default:active {
+  background-color: #e6e6e6 !important;
+  border-color: #adadad !important;
+  color: #333 !important;
 }
 
 .card {

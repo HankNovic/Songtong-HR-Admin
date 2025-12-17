@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import axios from "../../util/axiosInstance"
-import { reactive } from "vue";
+import { reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 
 interface Department {
@@ -9,6 +9,7 @@ interface Department {
 }
 
 const router = useRouter();
+const errorMessage = ref("");
 const datas = reactive({
   form: {
     number: null as number | null,
@@ -20,8 +21,51 @@ const datas = reactive({
   depList: [] as Department[]
 });
 
+const validateForm = (): boolean => {
+  errorMessage.value = "";
+
+  const number = Number(datas.form.number);
+  if (!datas.form.number || Number.isNaN(number) || number <= 0) {
+    errorMessage.value = "编号必须是大于 0 的数字";
+    return false;
+  }
+
+  if (!datas.form.name || !String(datas.form.name).trim()) {
+    errorMessage.value = "名字不能为空";
+    return false;
+  }
+
+  if (!datas.form.gender) {
+    errorMessage.value = "请选择性别";
+    return false;
+  }
+
+  const age = Number(datas.form.age);
+  if (!datas.form.age || Number.isNaN(age) || age <= 0 || age > 120) {
+    errorMessage.value = "年龄请输入 1-120 的数字";
+    return false;
+  }
+
+  if (!datas.form.dep.id) {
+    errorMessage.value = "请选择部门";
+    return false;
+  }
+
+  return true;
+};
+
 const add = () => {
-  axios.post('/emp', datas.form)
+  if (!validateForm()) {
+    return;
+  }
+
+  const payload = {
+    ...datas.form,
+    number: Number(datas.form.number),
+    age: Number(datas.form.age),
+  };
+
+  axios.post('/emp', payload)
     .then((res) => {
       if (res.data == true) {
         router.push({ name: "EmpShow" })
@@ -89,6 +133,9 @@ searchDep();
       </div>
       <div class="form-group">
       <div class="col-sm-offset-2 col-sm-10">
+        <div v-if="errorMessage" class="error-message">
+          {{ errorMessage }}
+        </div>
         <button type="submit" class="btn btn-primary">保存</button>
       </div>
     </div>
@@ -112,5 +159,14 @@ searchDep();
   margin-top: auto;
   padding-top: 10px;
   align-self: flex-start;
+}
+
+.error-message {
+  margin-bottom: 10px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  background-color: #fee;
+  color: #c33;
+  font-size: 13px;
 }
 </style>

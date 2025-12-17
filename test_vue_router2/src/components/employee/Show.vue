@@ -5,6 +5,7 @@ import { useRouter } from "vue-router";
 import { useClickOutsideClearSelection } from "../../util/useClickOutsideClearSelection";
 import { usePagination } from "../../util/usePagination";
 import { useSyncTableHeader } from "../../util/useSyncTableHeader";
+import { useSearchReset } from "../../util/useSearchReset";
 import BaseTableHeader from "../common/BaseTableHeader.vue";
 
 interface Department {
@@ -26,14 +27,16 @@ const router = useRouter();
 const selectedId = ref(-1);
 const selectedIds = ref<number[]>([]);
 const batchMode = ref(false);
-const datas = reactive({
-  form: {
+const createInitialForm = () => ({
     number: null as number | null,
     name: null as string | null,
     gender: "",
     age: null as number | null,
     'dep.id': ""
-  },
+});
+
+const datas = reactive({
+  form: createInitialForm(),
   list: [] as Employee[],
   depList: [] as Department[]
 });
@@ -66,6 +69,13 @@ const {
   source: computed(() => datas.list),
   storageKey: "pagination_pageSize_employee",
 });
+
+const { reset: resetSearchForm } = useSearchReset(datas.form, createInitialForm);
+
+const resetSearch = () => {
+  resetSearchForm();
+  search();
+};
 
 // 同步列宽 + 滚动条补偿（依赖 pagedData 和 batchMode 状态）
 useSyncTableHeader(
@@ -248,7 +258,8 @@ searchDep();
           </select>
         </div>
         <div class="col-sm-2">
-          <button type="submit" class="btn btn-primary">搜索</button>
+          <button type="submit" class="btn btn-primary" v-auto-blur>搜索</button>
+          <button type="button" class="btn btn-default" v-auto-blur style="margin-left: 8px;" @click="resetSearch">重置</button>
         </div>
       </form>
     </div>
@@ -275,7 +286,7 @@ searchDep();
           ref="bodyTableRef"
           class="table table-striped table-bordered table-hover"
         >
-          <tbody class="scrollable-tbody">
+        <tbody class="scrollable-tbody">
             <tr
               class="data"
               v-for="emp in pagedData"
@@ -290,16 +301,16 @@ searchDep();
                   @click.stop
                   @change="toggleSelect(emp.id, ($event.target as HTMLInputElement).checked)"
                 />
-              </td>
+            </td>
               <td><span class="ellipsis-cell">{{ emp.number }}</span></td>
               <td><span class="ellipsis-cell">{{ emp.name }}</span></td>
               <td><span class="ellipsis-cell">{{ emp.gender }}</span></td>
               <td><span class="ellipsis-cell">{{ emp.age }}</span></td>
               <td><span class="ellipsis-cell">{{ emp.dep != null ? emp.dep.name : '' }}</span></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+          </tr>
+        </tbody>
+      </table>
+    </div>
     </div>
 
     <div class="table-footer">
@@ -309,18 +320,18 @@ searchDep();
           <option v-for="size in pageSizeOptions" :key="size" :value="size">{{ size }}</option>
         </select>
         <span>条，共 {{ total }} 条</span>
-        <button type="button" class="btn btn-default btn-xs" :disabled="!hasPrev" @click="setPage(currentPage - 1)">上一页</button>
+        <button type="button" class="btn btn-default btn-xs" v-auto-blur :disabled="!hasPrev" @click="setPage(currentPage - 1)">上一页</button>
         <span>第 {{ currentPage }} / {{ totalPages }} 页</span>
-        <button type="button" class="btn btn-default btn-xs" :disabled="!hasNext" @click="setPage(currentPage + 1)">下一页</button>
+        <button type="button" class="btn btn-default btn-xs" v-auto-blur :disabled="!hasNext" @click="setPage(currentPage + 1)">下一页</button>
       </div>
 
-      <div id="buttons">
-      <button type="button" class="btn btn-default" @click="toggleBatch">
+    <div id="buttons">
+      <button type="button" class="btn btn-default" v-auto-blur @click="toggleBatch">
         {{ batchMode ? '退出批量' : '批量操作' }}
       </button>
-      <button type="button" class="btn btn-primary" v-if="!batchMode" @click="showAdd">新增</button>
-      <button type="button" class="btn btn-primary" v-if="!batchMode" @click="showUpdate">修改</button>
-      <button type="button" class="btn btn-danger" @click="deleteData">删除</button>
+      <button type="button" class="btn btn-primary" v-auto-blur v-if="!batchMode" @click="showAdd">新增</button>
+      <button type="button" class="btn btn-primary" v-auto-blur v-if="!batchMode" @click="showUpdate">修改</button>
+      <button type="button" class="btn btn-danger" v-auto-blur @click="deleteData">删除</button>
       </div>
     </div>
   </div>
