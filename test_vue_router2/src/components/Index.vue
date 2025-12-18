@@ -61,6 +61,12 @@ const hidePreview = () => {
   scheduleHidePreview();
 };
 
+// 立即关闭预览窗口（用于点击跳转时）
+const closePreview = () => {
+  clearHidePreview();
+  preview.value = '';
+};
+
 // 检查权限
 const hasPermission = (code: string) => {
   return auth.hasPermission(code);
@@ -68,7 +74,7 @@ const hasPermission = (code: string) => {
 
 const pageTitle = computed(() => {
   const metaTitle = (route.meta as any).title as string | undefined;
-  return metaTitle ? `Alan人事管理系统 - ${metaTitle}` : "Alan人事管理系统";
+  return metaTitle ? `松桐人事管理系统 - ${metaTitle}` : "松桐人事管理系统";
 });
 
 // 登出
@@ -146,7 +152,10 @@ onBeforeUnmount(() => {
 <template>
 <div id="container" ref="containerRef">
 <div id="top">
-  <div id="logo">{{ pageTitle }}</div>
+  <div id="logo">
+    <img src="/logo1.svg" alt="Logo" class="logo-img" />
+    <span class="logo-text">{{ pageTitle }}</span>
+  </div>
   <div id="user-info">
     <button
       class="theme-btn"
@@ -255,25 +264,26 @@ onBeforeUnmount(() => {
 
   <div v-if="collapsed && preview" class="preview" :style="{ top: previewTop + 'px' }" @mouseenter="clearHidePreview" @mouseleave="hidePreview">
     <template v-if="preview === 'emp' && hasPermission('employee')">
-      <router-link class="preview-item" to="/emp/show">员工管理</router-link>
-      <router-link class="preview-item" to="/emp/add">员工添加</router-link>
+      <router-link class="preview-item" to="/emp/show" @click="closePreview">员工管理</router-link>
+      <router-link class="preview-item" to="/emp/add" @click="closePreview">员工添加</router-link>
     </template>
     <template v-else-if="preview === 'dep' && hasPermission('department')">
-      <router-link class="preview-item" to="/dep/show">部门管理</router-link>
-      <router-link class="preview-item" to="/dep/add">部门添加</router-link>
+      <router-link class="preview-item" to="/dep/show" @click="closePreview">部门管理</router-link>
+      <router-link class="preview-item" to="/dep/add" @click="closePreview">部门添加</router-link>
     </template>
     <template v-else-if="preview === 'perm'">
-      <router-link v-if="hasPermission('sysUser')" class="preview-item" to="/sysUser/show">用户管理</router-link>
-      <router-link v-if="hasPermission('sysRole')" class="preview-item" to="/sysRole/show">角色管理</router-link>
-      <router-link v-if="hasPermission('sysPermission')" class="preview-item" to="/sysPermission/show">权限管理</router-link>
+      <router-link v-if="hasPermission('sysUser')" class="preview-item" to="/sysUser/show" @click="closePreview">用户管理</router-link>
+      <router-link v-if="hasPermission('sysRole')" class="preview-item" to="/sysRole/show" @click="closePreview">角色管理</router-link>
+      <router-link v-if="hasPermission('sysPermission')" class="preview-item" to="/sysPermission/show" @click="closePreview">权限管理</router-link>
     </template>
   </div>
+  <!-- 收缩按钮：放在侧边栏内部，使用 right: -24px 定位，紧贴侧边栏右侧 -->
+  <button class="collapse-btn" @click="toggleCollapse">
+    <svg class="collapse-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" :class="{ 'collapse-icon-rotated': !collapsed }">
+      <path d="M10 6L16 12L10 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </button>
 </div>
-<button class="collapse-btn" @click="toggleCollapse" :style="{ left: collapsed ? '64px' : '240px' }">
-  <svg class="collapse-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" :class="{ 'collapse-icon-rotated': !collapsed }">
-    <path d="M10 6L16 12L10 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-  </svg>
-</button>
 <div id="right">
 <router-view/>
 </div>
@@ -313,6 +323,19 @@ onBeforeUnmount(() => {
   color: #fff;
   font-size: 24px;
   font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo-img {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+}
+
+.logo-text {
+  white-space: nowrap;
 }
 
 #user-info {
@@ -411,6 +434,11 @@ a {
   padding: 10px 6px;
 }
 
+#left.collapsed {
+  width: 64px;
+  padding: 10px 6px;
+}
+
 #left.collapsed .menu-text,
 #left.collapsed .arrow,
 #left.collapsed .er {
@@ -485,27 +513,33 @@ a {
 .collapse-btn {
   position: absolute;
   top: 50%;
+  right: -24px; /* 紧贴侧边栏右侧，按钮宽度为 24px */
   width: 24px;
   height: 40px;
   border: none;
   outline: none;
   border-radius: 0 12px 12px 0;
   background: var(--color-surface);
-  /* 阴影整体偏向右下，亮色为黑色阴影，暗色为白色阴影 */
-  box-shadow: 3px 4px 8px var(--color-shadow-soft);
+  /* 阴影整体偏向右下，亮色为黑色阴影，暗色为白色阴影，确保始终显示 */
+  box-shadow: 3px 4px 8px var(--color-shadow-soft) !important;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.2s ease;
   padding: 0;
   z-index: 50;
   transform: translateY(-50%);
+  /* 使用 right: -24px 定位，相对于 #left 的右边缘，不受缩放影响 */
 }
 
-/* .collapse-btn:hover {
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-} */
+/* 确保所有状态下都保持阴影 */
+.collapse-btn:hover,
+.collapse-btn:active,
+.collapse-btn:focus,
+.collapse-btn:focus-visible {
+  box-shadow: 3px 4px 8px var(--color-shadow-soft) !important;
+}
 
 .collapse-icon {
   width: 18px;

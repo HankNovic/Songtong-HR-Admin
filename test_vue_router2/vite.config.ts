@@ -10,4 +10,8 @@ export default defineConfig({
       jQuery: "jquery",
       "windows.jQuery": "jquery"
     })],
+  server: {
+    host: '0.0.0.0', // 监听所有网络接口，允许局域网访问
+    port: 5173, // 指定端口（可选，默认就是 5173）
+  },
 })

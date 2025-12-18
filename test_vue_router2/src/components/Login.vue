@@ -46,7 +46,7 @@ const handleKeyup = (event: KeyboardEvent) => {
 <template>
   <div class="login-container">
     <div class="login-box">
-      <h2 class="login-title">Alan人事管理系统</h2>
+      <h2 class="login-title">松桐人事管理系统</h2>
       <form @submit.prevent="handleLogin" class="login-form">
         <div class="form-group">
           <label for="username">用户名</label>
@@ -84,7 +84,7 @@ const handleKeyup = (event: KeyboardEvent) => {
         </button>
       </form>
       <div class="login-tip">
-        <p>测试账号：admin / 123456（需要先在数据库中设置密码）</p>
+        <p>测试账号：admin / 123456（@@@）</p>
       </div>
     </div>
   </div>

@@ -1,9 +1,21 @@
 import axiosAPI from 'axios';
 import type { Result } from '../types/api';
 
+// 动态获取后端 API 地址
+// 如果当前访问的是 localhost/127.0.0.1，则后端也用 localhost
+// 否则使用当前页面的 hostname（支持局域网访问）
+const getApiBaseURL = () => {
+  const hostname = window.location.hostname;
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return 'http://localhost:8013';
+  }
+  // 使用当前页面的 hostname，端口固定为 8013
+  return `http://${hostname}:8013`;
+};
+
 // 使用create({config})方法创建axios实例
 const axios = axiosAPI.create({
-  baseURL: 'http://localhost:8013', // 请求后端数据的地址
+  baseURL: getApiBaseURL(), // 动态获取后端 API 地址
   timeout: 5000, // 请求超时设置，单位ms
   headers: {
     'Content-Type': 'application/json'

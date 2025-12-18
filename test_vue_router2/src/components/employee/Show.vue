@@ -213,6 +213,7 @@ const deleteData = () => {
   if (!confirm("确定要删除选中的数据吗？")) return;
   Promise.all(selectedIds.value.map(id => axios.delete('/emp/' + id)))
     .then(() => {
+      alert("删除成功");
       search();
       selectedIds.value = [];
       selectedId.value = -1;

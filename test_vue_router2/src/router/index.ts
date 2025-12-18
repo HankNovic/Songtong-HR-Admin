@@ -120,7 +120,7 @@ router.beforeEach((to, from, next) => {
     }
 
     // 设置页面 title
-    const baseTitle = 'Alan人事管理系统';
+    const baseTitle = '松桐人事管理系统';
     const routeTitle = (to.meta as any)?.title as string | undefined;
     if (routeTitle) {
         document.title = `${baseTitle} - ${routeTitle}`;
