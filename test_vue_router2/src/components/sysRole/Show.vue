@@ -34,6 +34,17 @@ const roleColumns = [
   { key: "status", title: "状态", className: "status-col" },
 ];
 
+// 系统角色保护：ID范围（前 3 个）
+const MAX_SYSTEM_ROLE_ID = 3;
+// 系统角色名称（根据实际数据调整）
+const SYSTEM_ROLE_NAMES = ["管理员", "经理", "员工"];
+
+// 检查是否为系统角色
+const isSystemRole = (role: Role | null | undefined): boolean => {
+  if (!role) return false;
+  return (role.id <= MAX_SYSTEM_ROLE_ID) || SYSTEM_ROLE_NAMES.includes(role.name);
+};
+
 const headerRef = ref<InstanceType<typeof BaseTableHeader> | null>(null);
 const bodyTableRef = ref<HTMLTableElement | null>(null);
 const bodyWrapperRef = ref<HTMLElement | null>(null);
@@ -75,6 +86,8 @@ const currentRole = ref<Role | null>(null);
 
 const showEditDialog = ref(false);
 const editMode = ref<"create" | "edit">("create");
+// 当前正在编辑的角色（用于系统角色只允许部分字段修改）
+const currentEditingRole = ref<Role | null>(null);
 const editForm = reactive({
   id: null as number | null,
   name: "",
@@ -157,11 +170,13 @@ const resetEditForm = () => {
   editForm.code = "";
   editForm.description = "";
   editForm.status = "启用";
+  currentEditingRole.value = null;
 };
 
 const openAddDialog = () => {
   resetEditForm();
   editMode.value = "create";
+  currentEditingRole.value = null;
   showEditDialog.value = true;
 };
 
@@ -177,6 +192,7 @@ const openEditDialog = () => {
   const current = datas.list.find(r => r.id === selectedId.value);
   if (!current) return;
   editMode.value = "edit";
+  currentEditingRole.value = current;
   editForm.id = current.id ?? null;
   editForm.name = current.name ?? "";
   editForm.code = current.code ?? "";
@@ -186,18 +202,39 @@ const openEditDialog = () => {
 };
 
 const submitEdit = async () => {
-  if (!editForm.name || !editForm.code) {
-    alert("名称和编码不能为空");
-    return;
+  const isEditingSystem = editMode.value === "edit" && currentEditingRole.value && isSystemRole(currentEditingRole.value);
+
+  // 新增或编辑普通角色：名称和编码必填
+  if (!isEditingSystem) {
+    if (!editForm.name || !editForm.code) {
+      alert("名称和编码不能为空");
+      return;
+    }
   }
+
   try {
-    const payload = {
+    const payload: any = {
       id: editForm.id ?? undefined,
-      name: editForm.name,
-      code: editForm.code,
       description: editForm.description || undefined,
       status: editForm.status || "启用",
     };
+
+    if (editMode.value === "create") {
+      // 新增：名称和编码必须提交
+      payload.name = editForm.name;
+      payload.code = editForm.code;
+    } else {
+      // 编辑
+      if (isEditingSystem && currentEditingRole.value) {
+        // 系统角色：名称和编码保持不变，只允许修改描述和状态
+        payload.name = currentEditingRole.value.name;
+        payload.code = currentEditingRole.value.code;
+      } else {
+        // 普通角色：允许修改名称和编码
+        payload.name = editForm.name;
+        payload.code = editForm.code;
+      }
+    }
     const res = editMode.value === "create"
       ? await createRole(payload)
       : await updateRole(payload as any);
@@ -214,19 +251,45 @@ const submitEdit = async () => {
 };
 
 const deleteData = async () => {
+  let idsToDelete: number[] = [];
+
   if (batchMode.value) {
     if (selectedIds.value.length === 0) {
       alert("请选中要删除的数据");
       return;
     }
+    idsToDelete = selectedIds.value;
   } else {
     if (selectedId.value < 0) {
       alert("请先选中要删除的数据行");
       return;
     }
-    selectedIds.value = [selectedId.value];
+    idsToDelete = [selectedId.value];
   }
-  if (!confirm("确定要删除选中的角色吗？")) return;
+
+  // 检查是否包含系统角色
+  const systemRoles = datas.list.filter(r =>
+    idsToDelete.includes(r.id) && isSystemRole(r)
+  );
+
+  if (systemRoles.length > 0) {
+    const names = systemRoles.map(r => r.name).join("、");
+    alert(`系统角色不可删除：${names}\n\n系统角色是系统运行的基础角色，删除可能导致权限体系异常。`);
+    return;
+  }
+
+  // 过滤掉系统角色（双重保护）
+  idsToDelete = idsToDelete.filter(id => {
+    const role = datas.list.find(r => r.id === id);
+    return role && !isSystemRole(role);
+  });
+
+  if (idsToDelete.length === 0) {
+    alert("没有可删除的角色");
+    return;
+  }
+
+  if (!confirm(`确定要删除选中的 ${idsToDelete.length} 个角色吗？`)) return;
   try {
     await Promise.all(selectedIds.value.map(id => deleteRole(id)));
     alert("删除成功");
@@ -353,7 +416,16 @@ search();
                 />
               </td>
               <td><span class="ellipsis-cell">{{ role.id }}</span></td>
-              <td><span class="ellipsis-cell">{{ role.name }}</span></td>
+              <td>
+                <span class="ellipsis-cell">
+                  {{ role.name }}
+                  <span
+                    v-if="isSystemRole(role)"
+                    class="system-badge"
+                    title="系统角色，仅允许修改描述和状态"
+                  >[系统]</span>
+                </span>
+              </td>
               <td><span class="ellipsis-cell">{{ role.code }}</span></td>
               <td><span class="description-cell">{{ role.description || '-' }}</span></td>
               <td class="status-col">
@@ -386,7 +458,22 @@ search();
       </button>
       <button type="button" class="btn btn-primary" v-auto-blur v-if="!batchMode" @click="openAddDialog">新增</button>
       <button type="button" class="btn btn-primary" v-auto-blur v-if="!batchMode" @click="openEditDialog">修改</button>
-      <button type="button" class="btn btn-danger" v-auto-blur @click="deleteData">删除</button>
+      <button
+        type="button"
+        class="btn btn-danger"
+        v-auto-blur
+        @click="deleteData"
+        :disabled="batchMode ? (selectedIds.length === 0 || selectedIds.some(id => {
+          const role = datas.list.find(r => r.id === id);
+          return role && isSystemRole(role);
+        })) : (selectedId < 0 || (selectedId >= 0 && isSystemRole(datas.list.find(r => r.id === selectedId)!)))"
+        :title="batchMode ? (selectedIds.some(id => {
+          const role = datas.list.find(r => r.id === id);
+          return role && isSystemRole(role);
+        }) ? '选中的角色中包含系统角色，不可删除' : '') : (selectedId >= 0 && isSystemRole(datas.list.find(r => r.id === selectedId)!) ? '系统角色不可删除' : '')"
+      >
+        删除
+      </button>
       <button type="button" class="btn btn-primary" v-auto-blur v-if="!batchMode" @click="openAssignPermissions">分配权限</button>
       </div>
     </div>
@@ -397,11 +484,31 @@ search();
         <h4>{{ editMode === 'create' ? '新增角色' : '修改角色' }}</h4>
         <div class="form-row">
           <label>角色名称</label>
-          <input v-model="editForm.name" type="text" class="form-control" placeholder="请输入角色名称">
+          <input
+            v-model="editForm.name"
+            type="text"
+            class="form-control"
+            placeholder="请输入角色名称"
+            :disabled="editMode === 'edit' && currentEditingRole && isSystemRole(currentEditingRole)"
+          >
         </div>
         <div class="form-row">
           <label>角色编码</label>
-          <input v-model="editForm.code" type="text" class="form-control" placeholder="请输入角色编码">
+          <input
+            v-model="editForm.code"
+            type="text"
+            class="form-control"
+            placeholder="请输入角色编码"
+            :disabled="editMode === 'edit' && currentEditingRole && isSystemRole(currentEditingRole)"
+          >
+        </div>
+        <div
+          class="form-row"
+          v-if="editMode === 'edit' && currentEditingRole && isSystemRole(currentEditingRole)"
+        >
+          <small class="system-edit-tip">
+            系统自带角色仅允许修改“描述”和“状态”，名称与编码已锁定。
+          </small>
         </div>
         <div class="form-row">
           <label>描述</label>
@@ -682,6 +789,30 @@ search();
 .btn-danger:hover {
   background-color: #c9302c;
   border-color: #ac2925;
+}
+
+.system-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 6px;
+  font-size: 11px;
+  color: #d97706;
+  background-color: #fef3c7;
+  border: 1px solid #fbbf24;
+  border-radius: 3px;
+  font-weight: 500;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.system-edit-tip {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: #6b7280;
 }
 
 .status-col {

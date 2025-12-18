@@ -12,6 +12,11 @@ public interface UserDao {
     User findByUsername(@Param("username") String username);
 
     /**
+     * 根据ID查询用户
+     */
+    User findById(@Param("id") Integer id);
+
+    /**
      * 查询用户的所有角色
      */
     List<Integer> findRoleIdsByUserId(@Param("userId") Integer userId);
@@ -35,6 +40,11 @@ public interface UserDao {
      * 查询所有权限
      */
     List<com.lz08.hrsys_ssm2.entity.Permission> findAllPermissions();
+
+    /**
+     * 根据ID查询权限
+     */
+    com.lz08.hrsys_ssm2.entity.Permission findPermissionById(@Param("id") Integer id);
 
     // 用户 CRUD
     int insertUser(User user);

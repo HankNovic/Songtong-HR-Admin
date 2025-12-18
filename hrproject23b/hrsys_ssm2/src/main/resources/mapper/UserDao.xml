@@ -2,11 +2,28 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.lz08.hrsys_ssm2.dao.UserDao">
 
+    <!-- 用户结果映射 -->
+    <resultMap id="UserResultMap" type="com.lz08.hrsys_ssm2.entity.User">
+        <id property="id" column="id" />
+        <result property="username" column="username" />
+        <result property="password" column="password" />
+        <result property="name" column="name" />
+        <result property="email" column="email" />
+        <result property="status" column="status" />
+    </resultMap>
+
     <!-- 根据用户名查询用户 -->
-    <select id="findByUsername" resultType="com.lz08.hrsys_ssm2.entity.User">
+    <select id="findByUsername" resultMap="UserResultMap">
         select id, username, password, name, email, status
         from `user`
         where username = #{username}
+    </select>
+
+    <!-- 根据ID查询用户 -->
+    <select id="findById" resultMap="UserResultMap">
+        select id, username, password, name, email, status
+        from `user`
+        where id = #{id}
     </select>
 
     <!-- 查询用户的所有角色ID -->
@@ -20,7 +37,7 @@
     </select>
 
     <!-- 查询所有用户 -->
-    <select id="findAll" resultType="com.lz08.hrsys_ssm2.entity.User">
+    <select id="findAll" resultMap="UserResultMap">
         select id, username, password, name, email, status
         from `user`
     </select>
@@ -35,6 +52,11 @@
         select id, code, name, description, status from `permission` order by id
     </select>
 
+    <!-- 根据ID查询权限 -->
+    <select id="findPermissionById" resultType="com.lz08.hrsys_ssm2.entity.Permission">
+        select id, code, name, description, status from `permission` where id = #{id}
+    </select>
+
     <!-- ========== 用户 CRUD ========== -->
     <insert id="insertUser" useGeneratedKeys="true" keyProperty="id">
         insert into `user` (username, password, name, email, status)
@@ -43,13 +65,13 @@
 
     <update id="updateUser">
         update `user`
-        set
+        <trim prefix="set" suffixOverrides=",">
             <if test="username != null">username = #{username},</if>
             <if test="password != null">password = #{password},</if>
             <if test="name != null">name = #{name},</if>
             <if test="email != null">email = #{email},</if>
             <if test="status != null">status = #{status},</if>
-            id = id
+        </trim>
         where id = #{id}
     </update>
 

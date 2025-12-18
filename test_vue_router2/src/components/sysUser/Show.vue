@@ -8,6 +8,7 @@ import { useClickOutsideClearSelection } from "../../util/useClickOutsideClearSe
 import { usePagination } from "../../util/usePagination";
 import { useSyncTableHeader } from "../../util/useSyncTableHeader";
 import { useSearchReset } from "../../util/useSearchReset";
+import { validateUserForm } from "../../util/useFormValidation";
 import BaseTableHeader from "../common/BaseTableHeader.vue";
 import BaseLoadingOverlay from "../common/BaseLoadingOverlay.vue";
 
@@ -16,6 +17,7 @@ const selectedIds = ref<number[]>([]);
 const batchMode = ref(false);
 const loading = ref(false);
 const errorMessage = ref("");
+const formErrorMessage = ref("");
 const createInitialForm = () => ({
   username: null as string | null,
   name: null as string | null,
@@ -166,6 +168,7 @@ const resetEditForm = () => {
 const showAdd = async () => {
   resetEditForm();
   editMode.value = "create";
+  formErrorMessage.value = "";
   showEditDialog.value = true;
 };
 
@@ -187,29 +190,43 @@ const showUpdate = async () => {
   editForm.email = (current as any).email || "";
   editForm.status = (current as any).status || "启用";
   editForm.password = "";
+  formErrorMessage.value = "";
   showEditDialog.value = true;
 };
 
 const submitUserEdit = async () => {
-  if (!editForm.username) {
-    alert("用户名不能为空");
-    return;
-  }
-  if (editMode.value === "create" && !editForm.password) {
-    alert("密码不能为空");
+  // 表单校验
+  const isValid = validateUserForm(
+    {
+      username: editForm.username,
+      password: editForm.password,
+      name: editForm.name,
+      email: editForm.email,
+      status: editForm.status,
+    },
+    formErrorMessage,
+    editMode.value === "edit"
+  );
+
+  if (!isValid) {
     return;
   }
 
   const payload: any = {
     id: editForm.id ?? undefined,
-    username: editForm.username,
-    name: editForm.name || undefined,
-    email: editForm.email || undefined,
+    username: editForm.username.trim(),
+    name: editForm.name?.trim() || undefined,
     status: editForm.status || "启用",
   };
 
-  if (editForm.password) {
-    payload.password = editForm.password;
+  // 邮箱字段：如果值存在（包括空字符串），则传递；如果为 null 或 undefined，则不传递
+  if (editForm.email !== null && editForm.email !== undefined && editForm.email.trim() !== "") {
+    payload.email = editForm.email.trim();
+  }
+
+  // 密码字段：如果填写了密码，则传递
+  if (editForm.password && editForm.password.trim() !== "") {
+    payload.password = editForm.password.trim();
   }
 
   try {
@@ -219,12 +236,13 @@ const submitUserEdit = async () => {
     if (res.code === 200 && res.data === true) {
       alert(editMode.value === "create" ? "新增成功" : "修改成功");
       showEditDialog.value = false;
+      formErrorMessage.value = "";
       search();
     } else {
-      alert(res.message || "提交失败");
+      formErrorMessage.value = res.message || (editMode.value === "create" ? "新增失败" : "修改失败");
     }
   } catch (e: any) {
-    alert(e?.message || "提交失败");
+    formErrorMessage.value = e?.message || (editMode.value === "create" ? "新增失败" : "修改失败");
   }
 };
 
@@ -453,9 +471,12 @@ search();
             <option value="禁用">禁用</option>
           </select>
         </div>
+        <div v-if="formErrorMessage" class="error-message">
+          {{ formErrorMessage }}
+        </div>
         <div class="modal-actions">
-          <button class="btn btn-primary" @click="submitUserEdit">保存</button>
-          <button class="btn btn-default" @click="showEditDialog = false">取消</button>
+          <button class="btn btn-primary" v-auto-blur @click="submitUserEdit">保存</button>
+          <button class="btn btn-default" v-auto-blur @click="showEditDialog = false">取消</button>
         </div>
       </div>
     </div>
@@ -757,6 +778,15 @@ search();
 .btn-danger:hover {
   background-color: #c9302c;
   border-color: #ac2925;
+}
+
+.error-message {
+  margin-bottom: 10px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  background-color: #fee;
+  color: #c33;
+  font-size: 13px;
 }
 </style>
 

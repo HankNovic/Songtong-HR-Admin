@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.Arrays;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -19,6 +20,30 @@ public class UserServiceImpl implements UserService {
     private UserDao userDao;
 
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
+    // 系统权限保护：ID范围（1-6）
+    private static final int MAX_SYSTEM_PERMISSION_ID = 6;
+
+    // 系统权限编码常量（根据实际权限编码调整）
+    private static final List<String> SYSTEM_PERMISSION_CODES = Arrays.asList(
+        "USER_MANAGE",        // 用户管理
+        "ROLE_MANAGE",        // 角色管理
+        "PERMISSION_MANAGE",  // 权限管理
+        "DEPT_MANAGE",        // 部门管理
+        "EMP_MANAGE",         // 员工管理
+        "SYSTEM_CONFIG"       // 系统配置（根据实际调整）
+    );
+
+    /**
+     * 检查是否为系统权限
+     */
+    private boolean isSystemPermission(Permission permission) {
+        if (permission == null) {
+            return false;
+        }
+        return (permission.getId() != null && permission.getId() <= MAX_SYSTEM_PERMISSION_ID) ||
+               (permission.getCode() != null && SYSTEM_PERMISSION_CODES.contains(permission.getCode()));
+    }
 
     @Override
     public User findByUsernameWithRolesAndPermissions(String username) {
@@ -178,9 +203,9 @@ public class UserServiceImpl implements UserService {
         if (user.getPassword() != null && !user.getPassword().isEmpty()) {
             user.setPassword(passwordEncoder.encode(user.getPassword()));
         } else {
-            // 保持旧密码
-            if (user.getUsername() != null) {
-                User dbUser = userDao.findByUsername(user.getUsername());
+            // 保持旧密码：通过 ID 查询用户，而不是通过用户名（因为用户名可能被修改）
+            if (user.getId() != null) {
+                User dbUser = userDao.findById(user.getId());
                 if (dbUser != null) {
                     user.setPassword(dbUser.getPassword());
                 }
@@ -242,6 +267,17 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public boolean deletePermission(Integer id) {
+        // 检查是否为系统权限
+        Permission permission = userDao.findPermissionById(id);
+        if (permission == null) {
+            throw new IllegalArgumentException("权限不存在");
+        }
+        
+        if (isSystemPermission(permission)) {
+            throw new IllegalArgumentException("系统权限不可删除：" + permission.getName() + 
+                "。系统权限是系统运行的基础权限，删除可能导致系统功能异常。");
+        }
+        
         // 删除角色权限关联
         userDao.deleteRolePermissionsByPermission(id);
         return userDao.deletePermission(id) > 0;

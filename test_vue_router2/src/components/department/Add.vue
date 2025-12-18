@@ -2,6 +2,7 @@
 import axios from "../../util/axiosInstance"
 import { reactive, ref } from "vue";
 import { useRouter } from "vue-router";
+import { validateDepartmentForm } from "../../util/useFormValidation";
 
 const router = useRouter();
 const datas = reactive({
@@ -14,24 +15,7 @@ const datas = reactive({
 const errorMessage = ref("");
 
 const validateForm = (): boolean => {
-  errorMessage.value = "";
-
-  if (!datas.form.number && datas.form.number !== 0) {
-    errorMessage.value = "请输入部门编号";
-    return false;
-  }
-  const number = Number(datas.form.number);
-  if (Number.isNaN(number) || number <= 0) {
-    errorMessage.value = "部门编号必须是大于 0 的数字";
-    return false;
-  }
-
-  if (!datas.form.name || datas.form.name.trim() === "") {
-    errorMessage.value = "请输入部门名称";
-    return false;
-  }
-
-  return true;
+  return validateDepartmentForm(datas.form, errorMessage);
 };
 
 const add = () => {

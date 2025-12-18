@@ -2,6 +2,7 @@
 import axios from "../../util/axiosInstance"
 import { reactive, ref } from "vue";
 import { useRouter } from "vue-router";
+import { validateEmployeeForm } from "../../util/useFormValidation";
 
 interface Department {
   id: number;
@@ -22,36 +23,7 @@ const datas = reactive({
 });
 
 const validateForm = (): boolean => {
-  errorMessage.value = "";
-
-  const number = Number(datas.form.number);
-  if (!datas.form.number || Number.isNaN(number) || number <= 0) {
-    errorMessage.value = "编号必须是大于 0 的数字";
-    return false;
-  }
-
-  if (!datas.form.name || !String(datas.form.name).trim()) {
-    errorMessage.value = "名字不能为空";
-    return false;
-  }
-
-  if (!datas.form.gender) {
-    errorMessage.value = "请选择性别";
-    return false;
-  }
-
-  const age = Number(datas.form.age);
-  if (!datas.form.age || Number.isNaN(age) || age <= 0 || age > 120) {
-    errorMessage.value = "年龄请输入 1-120 的数字";
-    return false;
-  }
-
-  if (!datas.form.dep.id) {
-    errorMessage.value = "请选择部门";
-    return false;
-  }
-
-  return true;
+  return validateEmployeeForm(datas.form, errorMessage);
 };
 
 const add = () => {

@@ -38,8 +38,16 @@ public class SysUserController {
     @Operation(summary = "修改用户", description = "更新用户信息（如需修改密码请传入密码字段）")
     @PutMapping
     public Result<Boolean> updateUser(@RequestBody User user) {
-        boolean ok = userService.updateUser(user);
-        return ok ? Result.success(true) : Result.error("修改用户失败");
+        try {
+            if (user.getId() == null) {
+                return Result.error("用户ID不能为空");
+            }
+            boolean ok = userService.updateUser(user);
+            return ok ? Result.success(true) : Result.error("修改用户失败");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.error("修改用户失败：" + e.getMessage());
+        }
     }
 
     @Operation(summary = "批量修改用户", description = "批量更新用户姓名、邮箱和状态")

@@ -1,7 +1,8 @@
 <script lang="ts" setup>
 import axios from "../../util/axiosInstance"
-import { reactive } from "vue";
+import { reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { validateDepartmentForm } from "../../util/useFormValidation";
 
 const router = useRouter();
 const route = useRoute();
@@ -13,14 +14,11 @@ const datas = reactive({
   }
 });
 
+const errorMessage = ref("");
+
 const update = () => {
   // 表单验证
-  if (!datas.form.name || datas.form.name.trim() === '') {
-    alert("请输入部门名称");
-    return;
-  }
-  if (!datas.form.number) {
-    alert("请输入部门编号");
+  if (!validateDepartmentForm(datas.form, errorMessage)) {
     return;
   }
 
@@ -80,6 +78,9 @@ if (datas.form.id) {
       </div>
       <div class="form-group">
         <div class="col-sm-offset-2 col-sm-10">
+          <div v-if="errorMessage" class="error-message">
+            {{ errorMessage }}
+          </div>
           <button type="submit" class="btn btn-primary">保存</button>
           <button type="button" class="btn btn-default" @click="router.push({ name: 'DepShow' })" style="margin-left: 10px;">取消</button>
         </div>
@@ -185,6 +186,15 @@ if (datas.form.id) {
   margin-top: auto;
   padding-top: 10px;
   align-self: flex-start;
+}
+
+.error-message {
+  margin-bottom: 10px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  background-color: #fee;
+  color: #c33;
+  font-size: 13px;
 }
 </style>
 
