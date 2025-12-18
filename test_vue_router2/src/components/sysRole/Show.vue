@@ -638,6 +638,11 @@ search();
 
 .modal-actions {
   text-align: right;
+  margin-top: 16px;
+}
+
+.modal-actions .btn + .btn {
+  margin-left: 12px;
 }
 
 .table-wrapper {
