@@ -11,7 +11,7 @@
  Target Server Version : 80019
  File Encoding         : 65001
 
- Date: 18/12/2025 13:29:26
+ Date: 18/12/2025 15:33:27
 */
 
 SET NAMES utf8mb4;
@@ -35,10 +35,10 @@ INSERT INTO `department` VALUES (1, '开发部', 101);
 INSERT INTO `department` VALUES (2, '测试部', 102);
 INSERT INTO `department` VALUES (3, '产品部', 103);
 INSERT INTO `department` VALUES (4, '设计部', 104);
-INSERT INTO `department` VALUES (8, '123', 1);
+INSERT INTO `department` VALUES (8, '123', 2222222);
 INSERT INTO `department` VALUES (9, '阿萨德', 1);
-INSERT INTO `department` VALUES (11, '市场部', 106);
 INSERT INTO `department` VALUES (12, '市场部', 111);
+INSERT INTO `department` VALUES (13, '测试用部门', 2147483647);
 
 -- ----------------------------
 -- Table structure for employee
@@ -266,7 +266,7 @@ INSERT INTO `employee` VALUES (345, 10098, '薛磊', '男', 21, 4);
 INSERT INTO `employee` VALUES (346, 10099, '冯秀英', '男', 48, 5);
 INSERT INTO `employee` VALUES (347, 10100, '王洋勇', '女', 41, 8);
 INSERT INTO `employee` VALUES (375, 10001, '郭丽涛', '女', 55, 3);
-INSERT INTO `employee` VALUES (376, 10002, '冯明静', '男', 23, NULL);
+INSERT INTO `employee` VALUES (376, 10002, '冯明静', '男', 23, 13);
 INSERT INTO `employee` VALUES (377, 10003, '杨娜', '男', 23, 5);
 INSERT INTO `employee` VALUES (378, 10004, '蒋勇', '男', 54, NULL);
 INSERT INTO `employee` VALUES (379, 10005, '唐娜', '女', 28, 2);
@@ -436,6 +436,7 @@ INSERT INTO `permission` VALUES (3, 'sysUser', '用户管理', '系统用户管�
 INSERT INTO `permission` VALUES (4, 'sysRole', '角色管理', '系统角色管理：用于维护角色信息以及角色与权限的关联', '启用');
 INSERT INTO `permission` VALUES (5, 'sysPermission', '权限管理', '权限资源管理：维护系统菜单、按钮等权限点，供角色授权使用', '启用');
 INSERT INTO `permission` VALUES (6, 'common', '通用管理', NULL, '启用');
+INSERT INTO `permission` VALUES (8, '!1@asd反手的?？', 'test', '撒大声地', '启用');
 
 -- ----------------------------
 -- Table structure for role
@@ -456,7 +457,7 @@ CREATE TABLE `role`  (
 INSERT INTO `role` VALUES (1, 'ROLE_ADMIN', '管理员', NULL, '启用');
 INSERT INTO `role` VALUES (2, 'ROLE_MANAGER', '经理', NULL, '启用');
 INSERT INTO `role` VALUES (3, 'ROLE_EMPLOYEE', '员工', NULL, '启用');
-INSERT INTO `role` VALUES (4, '111', 'test', 'asdasdasdasdasdasdasdasdasdasdas', '禁用');
+INSERT INTO `role` VALUES (4, '111', 'test', '@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@', '禁用');
 
 -- ----------------------------
 -- Table structure for user
@@ -482,10 +483,10 @@ INSERT INTO `user` VALUES (4, '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68
 INSERT INTO `user` VALUES (5, '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'ddddddddddddddddddddddddddddddddddddddddddd', NULL, '启用', 'testmanager');
 INSERT INTO `user` VALUES (6, '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', NULL, NULL, '启用', 'testemployee');
 INSERT INTO `user` VALUES (7, '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', NULL, NULL, '启用', 'admin123');
-INSERT INTO `user` VALUES (12, '$2a$10$8K1p/a0dL1Yz5bJnNqJYqJYqJYqJYqJYqJYqJYqJYqJYqJYqJYqJ', NULL, NULL, '启用', 'manager');
+INSERT INTO `user` VALUES (12, '$2a$10$8K1p/a0dL1Yz5bJnNqJYqJYqJYqJYqJYqJYqJYqJYqJYqJYqJYqJ', NULL, '21@1.1', '启用', 'manager');
 INSERT INTO `user` VALUES (13, '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'shzbxjd', NULL, '启用', 'testuser12ddddddddddddddddddddddasdasdaaaaaaaaaaaaaaaaaaaaaaaaaaa');
 INSERT INTO `user` VALUES (14, '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK3.HFjVjF7KJYqJYqJYqJYqJ', NULL, NULL, '禁用', 'testuser2');
-INSERT INTO `user` VALUES (15, '$2a$10$8K1p/a0dL1Yz5bJnNqJYqJYqJYqJYqJYqJYqJYqJYqJYqJYqJYqJ', NULL, NULL, '启用', 'manager');
+INSERT INTO `user` VALUES (15, '$2a$10$8K1p/a0dL1Yz5bJnNqJYqJYqJYqJYqJYqJYqJYqJYqJYqJYqJYqJ', NULL, '11', '启用', 'manager');
 INSERT INTO `user` VALUES (16, '$2a$10$CXMCinnPt6ht5sR/ahCRo.yTCXaiqtjIBZB451vHLE/8J4rp7vRLq', NULL, NULL, '启用', '111');
 
 SET FOREIGN_KEY_CHECKS = 1;

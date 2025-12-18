@@ -14,6 +14,48 @@ const empExpanded = ref(true);
 const depExpanded = ref(true);
 const permExpanded = ref(true);
 const collapsed = ref(true);
+
+// 本地存储键名
+const SIDEBAR_STATE_KEY = "hrsys_sidebar_state";
+
+// 保存侧边栏状态到本地
+const saveSidebarState = () => {
+  try {
+    const state = {
+      collapsed: collapsed.value,
+      empExpanded: empExpanded.value,
+      depExpanded: depExpanded.value,
+      permExpanded: permExpanded.value,
+    };
+    window.localStorage.setItem(SIDEBAR_STATE_KEY, JSON.stringify(state));
+  } catch (e) {
+    // 本地存储失败时静默忽略，不影响正常功能
+    console.warn("保存侧边栏状态失败", e);
+  }
+};
+
+// 从本地恢复侧边栏状态
+const restoreSidebarState = () => {
+  try {
+    const raw = window.localStorage.getItem(SIDEBAR_STATE_KEY);
+    if (!raw) return;
+    const state = JSON.parse(raw);
+    if (typeof state.collapsed === "boolean") {
+      collapsed.value = state.collapsed;
+    }
+    if (typeof state.empExpanded === "boolean") {
+      empExpanded.value = state.empExpanded;
+    }
+    if (typeof state.depExpanded === "boolean") {
+      depExpanded.value = state.depExpanded;
+    }
+    if (typeof state.permExpanded === "boolean") {
+      permExpanded.value = state.permExpanded;
+    }
+  } catch (e) {
+    console.warn("恢复侧边栏状态失败", e);
+  }
+};
 const preview = ref('');
 const previewTop = ref(0);
 const hidePreviewTimer = ref<number | null>(null);
@@ -27,10 +69,12 @@ const toggleMenu = (menu: string) => {
   } else if (menu === 'perm') {
     permExpanded.value = !permExpanded.value;
   }
+  saveSidebarState();
 };
 
 const toggleCollapse = () => {
   collapsed.value = !collapsed.value;
+  saveSidebarState();
 };
 
 const clearHidePreview = () => {
@@ -115,6 +159,9 @@ const updateScale = () => {
 };
 
 onMounted(() => {
+  // 恢复侧边栏展开/收起状态
+  restoreSidebarState();
+
   // 恢复登录状态
   auth.restoreAuth();
 
