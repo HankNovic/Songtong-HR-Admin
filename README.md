@@ -3,8 +3,8 @@
 本项目是一个 **松桐人事管理系统**（前后端分离，全栈示例），包含典型的人事/权限场景：
 
 <p float="left">
-  <img src="./pic/2.jpg" width="450" />
-  <img src="./pic/1.jpg" width="450" /> 
+  <img src="./pic/2.jpg" width="400" />
+  <img src="./pic/1.jpg" width="400" /> 
 </p>
 
 - 用户管理（账号、状态、角色分配）
