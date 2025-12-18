@@ -2,6 +2,11 @@
 
 本项目是一个 **松桐人事管理系统**（前后端分离，全栈示例），包含典型的人事/权限场景：
 
+<p float="left">
+  <img src="./pic/2.jpg" width="200" />
+  <img src="./pic/1.jpg" width="200" /> 
+</p>
+
 - 用户管理（账号、状态、角色分配）
 - 角色管理（角色、权限分配，系统内置角色保护）
 - 权限管理（基础权限 CRUD，系统内置权限保护）
@@ -17,6 +22,10 @@
 
 - **前端**：`test_vue_router2/`（Vite + Vue 3 + TypeScript）
 - **后端**：`hrproject23b/hrsys_ssm2/`（Spring Boot + MyBatis + MySQL）
+
+<p float="left">
+  <img src="./pic/3.png" width="200" />
+</p>
 
 ---
 
