@@ -72,6 +72,11 @@ const hasPermission = (code: string) => {
   return auth.hasPermission(code);
 };
 
+// 点击 Logo 跳转到员工管理页面
+const goHome = () => {
+  router.push("/emp/show");
+};
+
 const pageTitle = computed(() => {
   const metaTitle = (route.meta as any).title as string | undefined;
   return metaTitle ? `松桐人事管理系统 - ${metaTitle}` : "松桐人事管理系统";
@@ -152,7 +157,7 @@ onBeforeUnmount(() => {
 <template>
 <div id="container" ref="containerRef">
 <div id="top">
-  <div id="logo">
+  <div id="logo" @click="goHome">
     <img src="/logo1.svg" alt="Logo" class="logo-img" />
     <span class="logo-text">{{ pageTitle }}</span>
   </div>
@@ -326,6 +331,7 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 10px;
+  cursor: pointer;
 }
 
 .logo-img {

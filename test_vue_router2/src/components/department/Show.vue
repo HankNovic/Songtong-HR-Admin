@@ -119,8 +119,8 @@ const search = () => {
           list = list.filter(d => d.name?.includes(nameKeyword));
         }
 
-        // 按照编号升序排列
-        list.sort((a, b) => a.number - b.number);
+        // 按照 ID 升序排列
+        list.sort((a, b) => (a.id ?? 0) - (b.id ?? 0));
         datas.list = list;
         console.log('部门列表（筛选+升序排列）:', datas.list);
       })
