@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.lz08.hrsys_ssm2.dao.UserDao">
+
+    <!-- 根据用户名查询用户 -->
+    <select id="findByUsername" resultType="com.lz08.hrsys_ssm2.entity.User">
+        select id, username, password, name, email, status
+        from `user`
+        where username = #{username}
+    </select>
+
+    <!-- 查询用户的所有角色ID -->
+    <select id="findRoleIdsByUserId" resultType="java.lang.Integer">
+        select r_id from `m_user_role` where u_id = #{userId}
+    </select>
+
+    <!-- 查询角色的所有权限ID -->
+    <select id="findPermissionIdsByRoleId" resultType="java.lang.Integer">
+        select p_id from `m_role_permission` where r_id = #{roleId}
+    </select>
+
+    <!-- 查询所有用户 -->
+    <select id="findAll" resultType="com.lz08.hrsys_ssm2.entity.User">
+        select id, username, password, name, email, status
+        from `user`
+    </select>
+
+    <!-- 查询所有角色 -->
+    <select id="findAllRoles" resultType="com.lz08.hrsys_ssm2.entity.Role">
+        select id, code, name, description, status from `role` order by id
+    </select>
+
+    <!-- 查询所有权限 -->
+    <select id="findAllPermissions" resultType="com.lz08.hrsys_ssm2.entity.Permission">
+        select id, code, name, description, status from `permission` order by id
+    </select>
+
+    <!-- ========== 用户 CRUD ========== -->
+    <insert id="insertUser" useGeneratedKeys="true" keyProperty="id">
+        insert into `user` (username, password, name, email, status)
+        values (#{username}, #{password}, #{name}, #{email}, #{status})
+    </insert>
+
+    <update id="updateUser">
+        update `user`
+        set
+            <if test="username != null">username = #{username},</if>
+            <if test="password != null">password = #{password},</if>
+            <if test="name != null">name = #{name},</if>
+            <if test="email != null">email = #{email},</if>
+            <if test="status != null">status = #{status},</if>
+            id = id
+        where id = #{id}
+    </update>
+
+    <delete id="deleteUser">
+        delete from `user` where id = #{id}
+    </delete>
+
+    <!-- 批量更新用户基础信息（姓名、邮箱、状态） -->
+    <update id="batchUpdateUsers">
+        <foreach collection="users" item="u" separator=";">
+            update `user`
+            set
+                name = #{u.name},
+                email = #{u.email},
+                status = #{u.status}
+            where id = #{u.id}
+        </foreach>
+    </update>
+
+    <!-- ========== 角色 CRUD ========== -->
+    <insert id="insertRole" useGeneratedKeys="true" keyProperty="id">
+        insert into `role` (code, name, description, status)
+        values (#{code}, #{name}, #{description}, #{status})
+    </insert>
+
+    <update id="updateRole">
+        update `role`
+        set
+            <if test="code != null">code = #{code},</if>
+            <if test="name != null">name = #{name},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="status != null">status = #{status},</if>
+            id = id
+        where id = #{id}
+    </update>
+
+    <delete id="deleteRole">
+        delete from `role` where id = #{id}
+    </delete>
+
+    <!-- ========== 权限 CRUD ========== -->
+    <insert id="insertPermission" useGeneratedKeys="true" keyProperty="id">
+        insert into `permission` (code, name, description, status)
+        values (#{code}, #{name}, #{description}, #{status})
+    </insert>
+
+    <update id="updatePermission">
+        update `permission`
+        set
+            <if test="code != null">code = #{code},</if>
+            <if test="name != null">name = #{name},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="status != null">status = #{status},</if>
+            id = id
+        where id = #{id}
+    </update>
+
+    <delete id="deletePermission">
+        delete from `permission` where id = #{id}
+    </delete>
+
+    <!-- 关联清理 -->
+    <delete id="deleteUserRoles">
+        delete from `m_user_role` where u_id = #{userId}
+    </delete>
+
+    <delete id="deleteRolePermissions">
+        delete from `m_role_permission` where r_id = #{roleId}
+    </delete>
+
+    <delete id="deleteUserRolesByRoleId">
+        delete from `m_user_role` where r_id = #{roleId}
+    </delete>
+
+    <delete id="deleteRolePermissionsByPermission">
+        delete from `m_role_permission` where p_id = #{permissionId}
+    </delete>
+
+    <insert id="insertUserRole">
+        insert into `m_user_role`(u_id, r_id) values(#{userId}, #{roleId})
+    </insert>
+
+    <insert id="insertRolePermission">
+        insert into `m_role_permission`(r_id, p_id) values(#{roleId}, #{permissionId})
+    </insert>
+</mapper>
+

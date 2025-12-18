@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC
+        "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lz08.hrsys_ssm2.dao.DepartmentDao">
+    <!--    查询所有部门-->
+    <select id="search" resultType="com.lz08.hrsys_ssm2.entity.Department">
+        select  * from department
+    </select>
+
+    <!--根据ID查询部门-->
+    <select id="searchById" resultType="com.lz08.hrsys_ssm2.entity.Department">
+        select * from department where
+            id=#{id}
+    </select>
+
+    <!--添加部门-->
+    <insert id="add">
+        insert into department
+            (number,name)values(#{number},#{name})
+    </insert>
+
+    <!--更新部门-->
+    <update id="update">
+        update department set number=#{number},
+                              name=#{name}  where id=#{id}
+    </update>
+
+    <!--   删除部门-->
+    <delete id="delete">
+        delete from department where id=#{id}
+    </delete>
+
+
+</mapper>
