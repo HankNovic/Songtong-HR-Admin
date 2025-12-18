@@ -48,8 +48,8 @@ const SYSTEM_PERMISSION_CODES = [
 // 检查是否为系统权限
 const isSystemPermission = (permission: Permission): boolean => {
   if (!permission) return false;
-  return (permission.id <= MAX_SYSTEM_PERMISSION_ID) || 
-         (permission.code && SYSTEM_PERMISSION_CODES.includes(permission.code));
+  return (permission.id <= MAX_SYSTEM_PERMISSION_ID) ||
+         Boolean(permission.code && SYSTEM_PERMISSION_CODES.includes(permission.code));
 };
 
 const headerRef = ref<InstanceType<typeof BaseTableHeader> | null>(null);
@@ -449,7 +449,7 @@ search();
             type="text"
             class="form-control"
             placeholder="请输入权限名称"
-            :disabled="editMode === 'edit' && currentEditingPermission && isSystemPermission(currentEditingPermission)"
+            :disabled="!!(editMode === 'edit' && currentEditingPermission && isSystemPermission(currentEditingPermission))"
           >
         </div>
         <div class="form-row">
@@ -459,7 +459,7 @@ search();
             type="text"
             class="form-control"
             placeholder="请输入权限编码"
-            :disabled="editMode === 'edit' && currentEditingPermission && isSystemPermission(currentEditingPermission)"
+            :disabled="!!(editMode === 'edit' && currentEditingPermission && isSystemPermission(currentEditingPermission))"
           >
         </div>
         <div

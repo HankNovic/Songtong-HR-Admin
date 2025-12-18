@@ -489,7 +489,7 @@ search();
             type="text"
             class="form-control"
             placeholder="请输入角色名称"
-            :disabled="editMode === 'edit' && currentEditingRole && isSystemRole(currentEditingRole)"
+            :disabled="!!(editMode === 'edit' && currentEditingRole && isSystemRole(currentEditingRole))"
           >
         </div>
         <div class="form-row">
@@ -499,7 +499,7 @@ search();
             type="text"
             class="form-control"
             placeholder="请输入角色编码"
-            :disabled="editMode === 'edit' && currentEditingRole && isSystemRole(currentEditingRole)"
+            :disabled="!!(editMode === 'edit' && currentEditingRole && isSystemRole(currentEditingRole))"
           >
         </div>
         <div

@@ -84,7 +84,7 @@ const handleKeyup = (event: KeyboardEvent) => {
         </button>
       </form>
       <div class="login-tip">
-        <p>测试账号：admin / 123456（@@@）</p>
+        <p>测试账号：admin / 123456（数据每天重置）</p>
       </div>
     </div>
   </div>
