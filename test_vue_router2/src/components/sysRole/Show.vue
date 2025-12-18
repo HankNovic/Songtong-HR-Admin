@@ -9,6 +9,7 @@ import { usePagination } from "../../util/usePagination";
 import { useSyncTableHeader } from "../../util/useSyncTableHeader";
 import { useSearchReset } from "../../util/useSearchReset";
 import BaseTableHeader from "../common/BaseTableHeader.vue";
+import BaseLoadingOverlay from "../common/BaseLoadingOverlay.vue";
 
 const selectedId = ref(-1);
 const selectedIds = ref<number[]>([]);
@@ -315,6 +316,7 @@ search();
     </div>
 
     <div class="table-wrapper">
+      <BaseLoadingOverlay :show="loading" text="加载中..." />
       <BaseTableHeader
         ref="headerRef"
         :columns="roleColumns"
@@ -334,7 +336,7 @@ search();
           ref="bodyTableRef"
           class="table table-striped table-bordered table-hover"
         >
-          <tbody class="scrollable-tbody">
+      <tbody class="scrollable-tbody">
             <tr
               class="data"
               v-for="role in pagedData"
@@ -359,10 +361,10 @@ search();
                   <span :class="statusDotClass(role.status)"></span>
                   <span>{{ role.status || '启用' }}</span>
                 </span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+          </td>
+        </tr>
+      </tbody>
+    </table>
       </div>
     </div>
 
@@ -378,7 +380,7 @@ search();
         <button type="button" class="btn btn-default btn-xs" v-auto-blur :disabled="!hasNext" @click="setPage(currentPage + 1)">下一页</button>
       </div>
 
-      <div id="buttons">
+    <div id="buttons">
       <button type="button" class="btn btn-default" v-auto-blur @click="toggleBatch">
         {{ batchMode ? '退出批量' : '批量操作' }}
       </button>
@@ -539,6 +541,7 @@ search();
   min-height: 0;
   overflow: hidden;
   width: 100%;
+  position: relative;
 }
 
 .table-body-wrapper {

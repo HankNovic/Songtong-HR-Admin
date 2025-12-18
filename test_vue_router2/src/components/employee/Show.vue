@@ -7,6 +7,7 @@ import { usePagination } from "../../util/usePagination";
 import { useSyncTableHeader } from "../../util/useSyncTableHeader";
 import { useSearchReset } from "../../util/useSearchReset";
 import BaseTableHeader from "../common/BaseTableHeader.vue";
+import BaseLoadingOverlay from "../common/BaseLoadingOverlay.vue";
 
 interface Department {
   id: number;
@@ -27,6 +28,15 @@ const router = useRouter();
 const selectedId = ref(-1);
 const selectedIds = ref<number[]>([]);
 const batchMode = ref(false);
+// 处理并发请求：只要还有请求未完成，就显示 loading
+const pendingRequests = ref(0);
+const loading = computed(() => pendingRequests.value > 0);
+const withLoading = <T,>(p: Promise<T>) => {
+  pendingRequests.value += 1;
+  return p.finally(() => {
+    pendingRequests.value -= 1;
+  });
+};
 const createInitialForm = () => ({
     number: null as number | null,
     name: null as string | null,
@@ -118,8 +128,7 @@ const isSelected = (id: number) =>
 const search = () => {
   console.log('搜索函数被调用');
   console.log('搜索参数:', datas.form);
-  try {
-    axios.get('/emp', { params: datas.form })
+  withLoading(axios.get('/emp', { params: datas.form }))
       .then((res) => {
         console.log('搜索请求成功，响应数据:', res.data);
         datas.list = res.data;
@@ -133,13 +142,10 @@ const search = () => {
       .catch((error) => {
         console.error('搜索请求失败:', error);
       });
-  } catch (error) {
-    console.error('搜索函数执行出错:', error);
-  }
 };
 
 const searchDep = () => {
-  axios.get('/dep23B')
+  withLoading(axios.get('/dep23B'))
     .then((res) => {
       datas.depList = res.data;
       console.log('部门数据加载成功:', res.data);
@@ -211,7 +217,7 @@ const deleteData = () => {
     selectedIds.value = [selectedId.value];
   }
   if (!confirm("确定要删除选中的数据吗？")) return;
-  Promise.all(selectedIds.value.map(id => axios.delete('/emp/' + id)))
+  withLoading(Promise.all(selectedIds.value.map(id => axios.delete('/emp/' + id))))
     .then(() => {
       alert("删除成功");
       search();
@@ -266,6 +272,7 @@ searchDep();
     </div>
 
     <div class="table-wrapper">
+      <BaseLoadingOverlay :show="loading" text="加载中..." />
       <!-- 固定表头（通用组件） -->
       <BaseTableHeader
         ref="headerRef"
@@ -324,7 +331,7 @@ searchDep();
         <button type="button" class="btn btn-default btn-xs" v-auto-blur :disabled="!hasPrev" @click="setPage(currentPage - 1)">上一页</button>
         <span>第 {{ currentPage }} / {{ totalPages }} 页</span>
         <button type="button" class="btn btn-default btn-xs" v-auto-blur :disabled="!hasNext" @click="setPage(currentPage + 1)">下一页</button>
-      </div>
+    </div>
 
     <div id="buttons">
       <button type="button" class="btn btn-default" v-auto-blur @click="toggleBatch">
@@ -371,6 +378,7 @@ searchDep();
   /* 允许子元素收缩，避免被内容撑开导致没有滚动条 */
   min-height: 0;
   overflow: hidden;
+  position: relative;
 }
 
 .table-body-wrapper {

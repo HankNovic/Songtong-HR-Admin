@@ -7,6 +7,7 @@ import { usePagination } from "../../util/usePagination";
 import { useSyncTableHeader } from "../../util/useSyncTableHeader";
 import { useSearchReset } from "../../util/useSearchReset";
 import BaseTableHeader from "../common/BaseTableHeader.vue";
+import BaseLoadingOverlay from "../common/BaseLoadingOverlay.vue";
 
 const selectedId = ref(-1);
 const selectedIds = ref<number[]>([]);
@@ -265,6 +266,7 @@ search();
     </div>
 
     <div class="table-wrapper">
+      <BaseLoadingOverlay :show="loading" text="加载中..." />
       <BaseTableHeader
         ref="headerRef"
         :columns="permissionColumns"
@@ -417,6 +419,7 @@ search();
   min-height: 0;
   overflow: hidden;
   width: 100%;
+  position: relative;
 }
 
 .table-body-wrapper {

@@ -3,14 +3,31 @@ import type { Result } from '../types/api';
 
 // 动态获取后端 API 地址
 // 如果当前访问的是 localhost/127.0.0.1，则后端也用 localhost
-// 否则使用当前页面的 hostname（支持局域网访问）
+// 否则使用当前页面的 hostname 和协议（支持局域网访问和生产环境）
 const getApiBaseURL = () => {
   const hostname = window.location.hostname;
-  if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    return 'http://localhost:8013';
+  const origin = window.location.origin; // e.g. http(s)://hradmin.stwood.cn
+  
+  // 开发环境（Vite dev server）：直连后端 8013
+  // 典型场景：用局域网 IP 打开前端（如 10.x.x.x:5173），此时不应走 /api（会命中 Vite 自身导致 404）
+  if (import.meta.env.DEV) {
+    const devHost = hostname === 'localhost' || hostname === '127.0.0.1' ? 'localhost' : hostname;
+    return `http://${devHost}:8013`;
   }
-  // 使用当前页面的 hostname，端口固定为 8013
-  return `http://${hostname}:8013`;
+  
+  // 生产环境：优先检查是否有环境变量配置的 API 路径
+  // 如果通过反向代理（如 Nginx），API 路径可能是 /api 而不是 :8013
+  // 可以通过在 index.html 中设置 window.API_BASE_PATH 来覆盖
+  const apiBasePath = (window as any).API_BASE_PATH;
+  
+  if (apiBasePath) {
+    // 如果配置了 API 路径，使用同源（HTTPS）或完整 URL
+    return apiBasePath.startsWith('http') ? apiBasePath : `${origin}${apiBasePath}`;
+  }
+  
+  // 默认：生产环境走同源 HTTPS，并统一加 /api 前缀
+  // 需要 Nginx 配置：location ^~ /api/ { proxy_pass http://127.0.0.1:8013/; }
+  return `${origin}/api`;
 };
 
 // 使用create({config})方法创建axios实例

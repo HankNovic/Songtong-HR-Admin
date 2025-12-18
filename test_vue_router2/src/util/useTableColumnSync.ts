@@ -1,4 +1,4 @@
-import { onMounted, onUnmounted, watch, nextTick, type Ref } from 'vue';
+import { onMounted, onUnmounted, nextTick, type Ref } from 'vue';
 
 /**
  * 同步表头和表体的列宽

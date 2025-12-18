@@ -7,6 +7,7 @@ import { usePagination } from "../../util/usePagination";
 import { useSyncTableHeader } from "../../util/useSyncTableHeader";
 import { useSearchReset } from "../../util/useSearchReset";
 import BaseTableHeader from "../common/BaseTableHeader.vue";
+import BaseLoadingOverlay from "../common/BaseLoadingOverlay.vue";
 
 interface Department {
   id: number;
@@ -18,6 +19,7 @@ const router = useRouter();
 const selectedId = ref(-1);
 const selectedIds = ref<number[]>([]);
 const batchMode = ref(false);
+const loading = ref(false);
 const createInitialForm = () => ({
   name: null as string | null,
   number: null as number | null,
@@ -101,8 +103,8 @@ const isSelected = (id: number) =>
 const search = () => {
   console.log('搜索部门函数被调用');
   console.log('搜索参数:', datas.form);
-  try {
-    axios.get('/dep23B', { params: datas.form })
+  loading.value = true;
+  axios.get('/dep23B', { params: datas.form })
       .then((res) => {
         console.log('部门列表请求成功，响应数据:', res.data);
         let list: Department[] = res.data || [];
@@ -124,10 +126,10 @@ const search = () => {
       })
       .catch((error) => {
         console.error('部门列表请求失败:', error);
+      })
+      .finally(() => {
+        loading.value = false;
       });
-  } catch (error) {
-    console.error('搜索函数执行出错:', error);
-  }
 };
 
 const selectTr = (id: number) => {
@@ -186,6 +188,7 @@ const deleteData = () => {
     selectedIds.value = [selectedId.value];
   }
   if (!confirm("确定要删除选中的部门吗？删除后该部门下的员工部门信息将被置空。")) return;
+  loading.value = true;
   Promise.all(selectedIds.value.map(id => axios.delete('/dep23B/' + id)))
     .then(() => {
       alert("删除成功");
@@ -196,6 +199,9 @@ const deleteData = () => {
     .catch((error) => {
       console.error('删除失败:', error);
       alert("删除失败，请稍后重试");
+    })
+    .finally(() => {
+      loading.value = false;
     });
 };
 
@@ -224,6 +230,7 @@ search();
     </div>
 
     <div class="table-wrapper">
+      <BaseLoadingOverlay :show="loading" text="加载中..." />
       <BaseTableHeader
         ref="headerRef"
         :columns="depColumns"
@@ -324,6 +331,7 @@ search();
   display: flex;
   flex-direction: column;
   min-height: 0;
+  position: relative;
 }
 
 .table-body-wrapper {

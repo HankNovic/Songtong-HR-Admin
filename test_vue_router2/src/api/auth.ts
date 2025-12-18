@@ -1,6 +1,5 @@
 import axios from '../util/axiosInstance';
 import type { Result, LoginResponse } from '../types/api';
-import type { User } from '../types/user';
 
 export interface LoginRequest {
   username: string;

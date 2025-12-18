@@ -9,6 +9,14 @@
     <meta name="x5-orientation" content="landscape" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <title>Vite + Vue + TS</title>
+    <!-- 
+      生产环境 API 配置：
+      如果后端通过反向代理（如 Nginx）暴露在 /api 路径下，取消下面的注释：
+      <script>window.API_BASE_PATH = '/api';</script>
+      
+      如果后端直接暴露在 8013 端口，保持注释状态即可（使用默认配置）
+    -->
+    <!-- <script>window.API_BASE_PATH = '/api';</script> -->
   </head>
   <body>
     <div id="app"></div>
